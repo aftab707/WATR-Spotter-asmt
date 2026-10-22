@@ -44,6 +44,14 @@
 - **Kaise kaam karta hai:** Agar routing provider se 3 se kam routes aate hain, toh routing engine Route 1 ke midpoint se perpendicular vector calculate karke offset waypoint banata hai aur uske through re-route karta hai. Agar naya route pehle se mojood route se >90% overlap karta hai toh discard ho jata hai warna add ho jata hai. Geocode endpoint query ko 24 hours ke liye cache karta hai aur max 6 clean results deta hai.
 - **Interview mein kaise samjhaoge:** "Step 5 mein maine Adapter Pattern use karke routing aur geocoding providers ko decoupled banaya. OSRM ki 2-route limitation ko solve karne ke liye maine midpoint perpendicular offset algorithm likha jo mathematical waypoint projection se legitimate 3rd alternative generate karta hai, aur point-proximity buffer se duplicate (>90% overlap) routes ko prune karta hai. Geocoding endpoint Photon aur Nominatim ke automatic fallback ke sath fail-safe banaya gaya hai."
 
+## Step 6 — Multi-Criteria Recommendation Engine & Reason Generation
+
+- **Kya banaya:** Humne `backend/planner/logic/recommend.py` mein pure recommendation engine banaya jo route candidates ko safety preference order `(no_travel_miles, severe_miles, high_miles, avg_risk, duration_minutes)` par rank karta hai aur fastest route ke muqable comparative reasons generate karta hai.
+- **Kyun banaya:** Truck dispatcher ya driver ke liye sirf number dekhna kafi nahi hota, usay clear decision-making guidance chahiye hoti hai ke konsa rasta safest hai aur kyun (maslan: 25 minutes zyada lag rahe hain lekin 40 miles severe storm se bach rahe hain).
+- **Kaise kaam karta hai:** Engine lexicographical tuple comparison use karta hai jahan No Travel aur Severe storm miles sabse pehle consider hote hain (bhale route slower ho). Agar koi route No Travel face kare toh woh unrecommended flag ho jata hai. Fastest route se compare karke dynamic, human-readable reason string banayi jaati hai (jaise `"+25 min vs fastest, 40.0 fewer Severe miles"`).
+- **Interview mein kaise samjhaoge:** "Recommendation engine 100% pure function hai jo deterministic 5-level tie-breaking implement karta hai. Maine floating-point noise khatam karne ke liye distances ko 0.1 miles aur average risk ko 0.01 par round kiya hai. Engine safety-first principle follow karta hai: Severe storm miles hamesha travel time par jeet te hain, jabke No Travel routes ko strictly recommend hone se block kiya jata hai aur all-hazard scenarios mein proper system warning trigger hoti hai."
+
+
 
 
 
