@@ -131,6 +131,23 @@
   5. `Planner.jsx` ke bottom panel mein slick tab switcher banaya gaya hai jo user ko "0–48h Timeline Forecast" aur "Checkpoints & Risk Strip" ke darmiyan smoothly toggle karne deta hai.
 - **Interview mein kaise samjhaoge:** "Step 13 tabular transparency aur two-way spatial synchronisation establish karta hai. Maine Step 3 ke pure mathematical geometry outputs—specifically midpoint Voronoi segment miles—ko frontend visual bar (`RiskStrip`) ke sath 1-to-1 bind kiya hai taake har segment ki physical width route ke exact miles represent kare. Saath hi MapLibre ke imperative `flyTo` camera controls ko declarative React state ke sath connect kiya hai, jis se user table row ya risk bar segment par click karke direct corridor ke specific coordinates par smoothly navigate kar sakta hai with zero layout shift."
 
+## Step 14 — UX & Visual Polish, Accessibility, Responsive Layout & Cold-Start Resilience
+
+- **Kya banaya:** Humne frontend ka comprehensive design system aur accessibility pass complete kiya:
+  1. Strict 8px spacing scale aur unified 8px border radius standardize kiya.
+  2. Sirf 2 font weights enforce kiye (400 regular, 600 semi-bold) Google Fonts Inter ke sath.
+  3. `prefers-reduced-motion` media query aur universal keyboard `:focus-visible` styles (`#38bdf8` outline) add kiye.
+  4. Custom commercial semi-truck + storm weather SVG favicon (`public/favicon.svg`) aur updated `index.html` meta tags (`theme-color`, `description`, `<title>WATR — Weather-Aware Truck Routing</title>`) integrate kiye.
+  5. `ShellLayout.jsx` mein mobile/tablet responsive navigation banayi: mobile screens (<900px) par "Routes & Setup" aur "Map & Weather" tabs ke darmiyan seamless switching hoti hai, aur jab user route calculate karta hai ya checkpoint click karta hai toh app automatically map view par navigate kar leti hai.
+  6. Backend cold-start UX: `AppHeader.jsx` aur `TripForm.jsx` mein "Server waking up…" badge aur helper text lagaya jo free-tier host (Render/Koyeb) ke 15–20s spin-up time ko gracefully driver ko communicate karta hai.
+- **Kyun banaya:** Evaluators UI ko multiple screen sizes (phone, tablet, desktop monitor) par open karte hain aur accessibility audit (Lighthouse) run karte hain. Agar mobile par map gayab ho jaye ya layout collapse kare, ya free-tier backend ki 20 second ki sleep ki wajah se user ko lage ke app toot gayi hai, toh evaluation fail ho jati hai. Step 14 product ko enterprise-ready commercial quality bar deta hai.
+- **Kaise kaam karta hai:**
+  1. `MuiCssBaseline` ke andar `@media (prefers-reduced-motion: reduce)` rules tamam animations aur transitions ko 0.01ms par force karte hain, jo vestibular motion sensitivity wale users ke liye zaroori hai.
+  2. `ShellLayout` conditional rendering aur MUI `Tabs` use karke mobile par 100% full-screen height utilize karta hai bina kisi horizontal overflow ya map crushing ke. Desktop par simultaneous 3-panel command dashboard maintain rehta hai.
+  3. Backend health check jab pending ya error state mein ho, tab warning amber chip "Server waking up…" show hota hai with informative tooltip.
+- **Interview mein kaise samjhaoge:** "Step 14 hamari attention to detail aur production empathy ko show karta hai. Section 8 quality bar ke mutabiq maine strict 8px spacing, single 8px border radius, aur max 2 font weights rule ko pura maintain rakha hai. Mobile users ke liye dedicated tab switching introduce ki hai taake MapLibre canvas crush na ho, aur free-tier backend cold start ko proactive 'Server waking up…' status se handle kiya hai taake user ko clear feedback miley. Saath hi Lighthouse accessibility audit ke liye WCAG AA contrast, semantic ARIA attributes, aur `prefers-reduced-motion` support provide ki hai."
+
+
 
 
 

@@ -370,6 +370,17 @@ export default function TripForm({ onSubmit, isSubmitting = false, serverError =
       >
         {isSubmitting ? 'Calculating Safe Routes...' : 'Calculate Safe Routes'}
       </Button>
+
+      {/* Loading Helper / Cold-Start Subtext */}
+      {isSubmitting && (
+        <Typography
+          variant="caption"
+          align="center"
+          sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: -0.5 }}
+        >
+          Corridor routing & weather sampling in progress... (Free-tier instances may take ~15–20s to wake up on first call)
+        </Typography>
+      )}
     </Paper>
   );
 }

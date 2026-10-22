@@ -33,6 +33,7 @@ export default function Planner() {
   const [hoveredRouteId, setHoveredRouteId] = useState(null);
   const [focusedCheckpoint, setFocusedCheckpoint] = useState(null);
   const [bottomTab, setBottomTab] = useState('timeline'); // 'timeline' | 'checkpoints'
+  const [mobileTab, setMobileTab] = useState('controls'); // 'controls' | 'map'
   const [sliderHour, setSliderHour] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(true);
@@ -64,6 +65,7 @@ export default function Planner() {
       setSelectedRouteId(response.recommended_route_id || response.routes[0]?.id);
       setSliderHour(0);
       setFocusedCheckpoint(null);
+      setMobileTab('map');
     } catch (err) {
       setServerError(err.message || 'Failed to calculate safe routes. Please try again.');
     }
@@ -152,7 +154,10 @@ export default function Planner() {
                 onSelect={() => setSelectedRouteId(route.id)}
                 onMouseEnter={() => setHoveredRouteId(route.id)}
                 onMouseLeave={() => setHoveredRouteId(null)}
-                onSelectCheckpoint={(cp) => setFocusedCheckpoint(cp)}
+                onSelectCheckpoint={(cp) => {
+                  setFocusedCheckpoint(cp);
+                  setMobileTab('map');
+                }}
               />
             ))}
           </Stack>
@@ -275,6 +280,8 @@ export default function Planner() {
       leftPanel={leftPanelContent}
       mapArea={mapAreaContent}
       bottomPanel={bottomPanelContent}
+      mobileTab={mobileTab}
+      onMobileTabChange={setMobileTab}
     />
   );
 }

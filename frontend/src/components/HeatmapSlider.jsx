@@ -198,6 +198,8 @@ export default function HeatmapSlider({
             onChange={handleSliderChange}
             valueLabelDisplay="auto"
             valueLabelFormat={(v) => `+${v}h`}
+            aria-label="0 to 48 hours forecast timeline slider"
+            getAriaValueText={(v) => `+${v} hours from departure`}
             sx={{
               color: 'primary.main',
               py: 1,

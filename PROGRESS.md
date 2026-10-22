@@ -15,8 +15,8 @@
 - [x] **Step 10 — Results: route cards + recommendation**
 - [x] **Step 11 — Map: routes + checkpoints**
 - [x] **Step 12 — Heatmap + 0–48h slider**
-- [ ] **Step 13 — Checkpoint table + risk strip**
-- [ ] **Step 14 — UX & visual polish**
+- [x] **Step 13 — Checkpoint table + risk strip**
+- [x] **Step 14 — UX & visual polish**
 - [ ] **Step 15 — Docker, Redis (OPTIONAL), CI**
 - [ ] **Step 16 — Deploy**
 - [ ] **Step 17 — Documentation & Loom prep**
@@ -96,4 +96,10 @@
 - **What changed:** Implemented distance-proportional `RiskStrip` component where each segment width equals `(checkpoint.segment_miles / total_distance) * 100%` and is colored by its risk tier with interactive tooltips and camera focus click handlers; built responsive, sticky-header `CheckpointTable` guaranteed sorted ascending by mile, displaying mile, ETA, risk badge, wind speed, precipitation (rain/snow), hazard drivers, gross cargo load rule alerts, segment miles, and map focus action buttons; added instant risk filter chips ("All", "High / Severe", "Load Rule") and zero-CLS `TablePagination` (10, 25, 50, All); embedded mini `RiskStrip` in each `RouteCard` and integrated a clean bottom drawer tab switcher in `pages/Planner.jsx` enabling drivers to seamlessly toggle between the 0–48h timeline slider and the route checkpoints table with two-way map camera centering via MapLibre `flyTo`.
 - **Files touched:** `frontend/src/components/RiskStrip.jsx`, `frontend/src/components/CheckpointTable.jsx`, `frontend/src/components/RouteCard.jsx`, `frontend/src/components/RouteMap.jsx`, `frontend/src/pages/Planner.jsx`, `PROGRESS.md`, `docs/LEARNING.md`.
 - **How to verify:** Run `npm --prefix frontend run lint` (0 warnings), `npm --prefix frontend run build` (builds successfully), and `pytest backend` (113 passing). In browser: clicking any segment in the risk strip or clicking "Focus" on any table row smoothly flies the MapLibre camera to that exact checkpoint coordinate and opens its weather popup; table rows are strictly sorted ascending by mile; values match API data exactly; pagination and sticky header ensure zero cumulative layout shift (CLS).
+
+### Step 14 — UX & visual polish
+- **What changed:** Conducted a comprehensive design system and accessibility pass across the frontend: enforced strict 8px spacing, unified 8px border radius, and max 2 font weights (400 regular, 600 semi-bold) across MUI theme; integrated `prefers-reduced-motion` media query and universal `:focus-visible` accessibility indicators in `MuiCssBaseline`; created custom commercial truck and storm SVG favicon (`public/favicon.svg`), updated `index.html` with description/theme-color meta tags and `<title>WATR — Weather-Aware Truck Routing</title>`; built responsive mobile layout switcher in `ShellLayout.jsx` allowing phones and tablets (<900px) to seamlessly toggle between "Routes & Setup" and "Map & Weather" with automatic view transitions upon route calculation; added friendly "Server waking up…" cold-start chip and subtext in `AppHeader.jsx` and `TripForm.jsx` to gracefully communicate free-tier backend spin-up delays.
+- **Files touched:** `frontend/index.html`, `frontend/public/favicon.svg`, `frontend/src/theme/theme.js`, `frontend/src/components/ShellLayout.jsx`, `frontend/src/components/AppHeader.jsx`, `frontend/src/components/TripForm.jsx`, `frontend/src/components/HeatmapSlider.jsx`, `frontend/src/pages/Planner.jsx`, `PROGRESS.md`, `docs/LEARNING.md`.
+- **How to verify:** Run `npm --prefix frontend run lint` (0 warnings), `npm --prefix frontend run build` (builds cleanly), and `pytest backend` (113 passing). In browser: inspect at 375px (mobile), 768px (tablet), and 1440px (desktop)—all layouts align with zero overflow or crushed maps; tab navigation works on mobile; favicon renders in browser tab; focus outlines appear on keyboard tab navigation; motion honors `prefers-reduced-motion`.
+
 

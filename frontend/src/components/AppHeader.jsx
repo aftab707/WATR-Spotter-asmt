@@ -15,6 +15,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import StorageIcon from '@mui/icons-material/Storage';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import { useHealthCheck } from '../api/queries';
 import { IS_MOCK_MODE } from '../api/client';
 
@@ -65,29 +66,34 @@ export default function AppHeader({ onRefreshPlan }) {
             />
           </Tooltip>
 
-          {/* Backend Health Status Badge */}
+          {/* Backend Health Status Badge with "Server waking up..." support */}
           {isLoading || isFetching ? (
-            <Chip
-              label="Checking..."
-              size="small"
-              variant="outlined"
-              sx={{ borderColor: 'rgba(255,255,255,0.15)' }}
-            />
+            <Tooltip title="Checking backend API connectivity...">
+              <Chip
+                icon={<HourglassEmptyIcon sx={{ fontSize: 16 }} />}
+                label="Checking..."
+                size="small"
+                variant="outlined"
+                sx={{ borderColor: 'rgba(255,255,255,0.15)' }}
+              />
+            </Tooltip>
           ) : isOnline ? (
-            <Chip
-              icon={<CheckCircleOutlineIcon sx={{ fontSize: 16 }} />}
-              label="Backend: Online"
-              color="success"
-              size="small"
-              variant="outlined"
-              sx={{ fontWeight: 600 }}
-            />
+            <Tooltip title="Backend REST API is online and responding normally">
+              <Chip
+                icon={<CheckCircleOutlineIcon sx={{ fontSize: 16 }} />}
+                label="Backend: Online"
+                color="success"
+                size="small"
+                variant="outlined"
+                sx={{ fontWeight: 600 }}
+              />
+            </Tooltip>
           ) : (
-            <Tooltip title="Backend unreachable at port 8000. Switch to mock mode or start Django server.">
+            <Tooltip title="Free-tier backend spinning up from sleep (may take 15–30s on first request). Click Refresh to retry.">
               <Chip
                 icon={<ErrorOutlineIcon sx={{ fontSize: 16 }} />}
-                label="Backend: Offline"
-                color="error"
+                label="Server waking up…"
+                color="warning"
                 size="small"
                 variant="outlined"
                 sx={{ fontWeight: 600 }}
@@ -104,6 +110,7 @@ export default function AppHeader({ onRefreshPlan }) {
               if (onRefreshPlan) onRefreshPlan();
             }}
             disabled={isFetching}
+            aria-label="Refresh trip calculations and backend connectivity"
             sx={{ borderColor: 'rgba(255,255,255,0.15)', color: 'text.primary' }}
           >
             Refresh

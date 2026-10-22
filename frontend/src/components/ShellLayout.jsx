@@ -1,18 +1,100 @@
+import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { Box } from '@mui/material';
+import { Box, Tabs, Tab } from '@mui/material';
+import AltRouteIcon from '@mui/icons-material/AltRoute';
+import MapIcon from '@mui/icons-material/Map';
 
 /**
- * Shell Layout dividing the screen into:
- * - Fixed Top Header
- * - Left Panel (Trip Form + Route Cards, scrollable)
- * - Main Center Area (Map View)
- * - Bottom / Secondary Panel (0-48h Heatmap Slider + Checkpoint details)
+ * Responsive Shell Layout for WATR.
+ *
+ * Per Step 14 & Section 8 UI/UX Quality Bar:
+ * - Desktop (>= 900px / md): Simultaneous 3-panel split (Left Controls/Cards, Map Canvas, Bottom Drawer).
+ * - Mobile / Narrow screens (< 900px): Clean mobile tab switcher toggling between "Routes & Setup" and "Map & Weather".
+ * - Seamless accessibility, ARIA landmark roles, focus rings, zero layout shift.
  */
-export default function ShellLayout({ header, leftPanel, mapArea, bottomPanel }) {
+export default function ShellLayout({
+  header,
+  leftPanel,
+  mapArea,
+  bottomPanel,
+  mobileTab: controlledMobileTab,
+  onMobileTabChange,
+}) {
+  const [internalMobileTab, setInternalMobileTab] = useState('controls');
+
+  const isControlled = controlledMobileTab !== undefined;
+  const activeTab = isControlled ? controlledMobileTab : internalMobileTab;
+
+  const handleTabChange = (_, val) => {
+    if (!isControlled) {
+      setInternalMobileTab(val);
+    }
+    if (onMobileTabChange) {
+      onMobileTabChange(val);
+    }
+  };
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden', bgcolor: 'background.default' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        width: '100vw',
+        overflow: 'hidden',
+        bgcolor: 'background.default',
+      }}
+    >
       {/* Top Navigation */}
       {header}
+
+      {/* Mobile / Narrow Screen Tab Switcher (< md) */}
+      <Box
+        sx={{
+          display: { xs: 'flex', md: 'none' },
+          borderBottom: 1,
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+          zIndex: 4,
+        }}
+      >
+        <Tabs
+          value={activeTab}
+          onChange={handleTabChange}
+          variant="fullWidth"
+          textColor="primary"
+          indicatorColor="primary"
+          aria-label="Mobile navigation views"
+          sx={{
+            width: '100%',
+            minHeight: 44,
+            '& .MuiTab-root': {
+              minHeight: 44,
+              py: 0.5,
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              textTransform: 'none',
+            },
+          }}
+        >
+          <Tab
+            value="controls"
+            icon={<AltRouteIcon sx={{ fontSize: 18 }} />}
+            iconPosition="start"
+            label="Routes & Setup"
+            id="mobile-tab-controls"
+            aria-controls="mobile-panel-controls"
+          />
+          <Tab
+            value="map"
+            icon={<MapIcon sx={{ fontSize: 18 }} />}
+            iconPosition="start"
+            label="Map & Weather"
+            id="mobile-tab-map"
+            aria-controls="mobile-panel-map"
+          />
+        </Tabs>
+      </Box>
 
       {/* Main Workspace Body */}
       <Box
@@ -27,12 +109,17 @@ export default function ShellLayout({ header, leftPanel, mapArea, bottomPanel })
         {/* Left Control & Route Cards Panel */}
         <Box
           component="aside"
+          id="mobile-panel-controls"
+          role="region"
+          aria-labelledby="mobile-tab-controls"
           sx={{
             width: { xs: '100%', md: 430, lg: 460 },
             borderRight: { md: 1 },
-            borderBottom: { xs: 1, md: 0 },
             borderColor: 'divider',
-            display: 'flex',
+            display: {
+              xs: activeTab === 'controls' ? 'flex' : 'none',
+              md: 'flex',
+            },
             flexDirection: 'column',
             overflowY: 'auto',
             bgcolor: 'background.paper',
@@ -45,9 +132,15 @@ export default function ShellLayout({ header, leftPanel, mapArea, bottomPanel })
         {/* Center Canvas / Map Area & Bottom Drawer */}
         <Box
           component="main"
+          id="mobile-panel-map"
+          role="region"
+          aria-labelledby="mobile-tab-map"
           sx={{
             flex: 1,
-            display: 'flex',
+            display: {
+              xs: activeTab === 'map' ? 'flex' : 'none',
+              md: 'flex',
+            },
             flexDirection: 'column',
             overflow: 'hidden',
             position: 'relative',
@@ -92,4 +185,6 @@ ShellLayout.propTypes = {
   leftPanel: PropTypes.node.isRequired,
   mapArea: PropTypes.node.isRequired,
   bottomPanel: PropTypes.node,
+  mobileTab: PropTypes.string,
+  onMobileTabChange: PropTypes.func,
 };

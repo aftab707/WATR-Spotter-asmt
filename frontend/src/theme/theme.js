@@ -53,10 +53,28 @@ export const theme = createTheme({
       primary: '#f1f5f9',
       secondary: '#94a3b8',
     },
+    error: {
+      main: '#ef4444',
+      light: '#f87171',
+      dark: '#b91c1c',
+      contrastText: '#ffffff',
+    },
+    warning: {
+      main: '#f97316',
+      light: '#fb923c',
+      dark: '#c2410c',
+      contrastText: '#ffffff',
+    },
+    success: {
+      main: '#22c55e',
+      light: '#4ade80',
+      dark: '#15803d',
+      contrastText: '#0b0f19',
+    },
   },
   spacing: 8,
   shape: {
-    borderRadius: 8, // Single border radius standard
+    borderRadius: 8, // Single unified border radius (Section 8 quality bar)
   },
   typography: {
     fontFamily: ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'].join(','),
@@ -95,6 +113,39 @@ export const theme = createTheme({
     },
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        // Accessibility: respects user preference for reduced motion
+        '@media (prefers-reduced-motion: reduce)': {
+          '*, *::before, *::after': {
+            animationDuration: '0.01ms !important',
+            animationIterationCount: '1 !important',
+            transitionDuration: '0.01ms !important',
+            scrollBehavior: 'auto !important',
+          },
+        },
+        // Universal accessible focus indicator
+        ':focus-visible': {
+          outline: '2px solid #38bdf8 !important',
+          outlineOffset: '2px',
+        },
+        // Custom sleek scrollbars for dark UI
+        '::-webkit-scrollbar': {
+          width: '6px',
+          height: '6px',
+        },
+        '::-webkit-scrollbar-track': {
+          background: 'rgba(255, 255, 255, 0.02)',
+        },
+        '::-webkit-scrollbar-thumb': {
+          background: 'rgba(255, 255, 255, 0.15)',
+          borderRadius: '3px',
+        },
+        '::-webkit-scrollbar-thumb:hover': {
+          background: 'rgba(255, 255, 255, 0.28)',
+        },
+      },
+    },
     MuiButton: {
       defaultProps: {
         disableElevation: true,
