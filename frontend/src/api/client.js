@@ -18,6 +18,14 @@ const MOCK_CITIES = [
   { label: 'Lincoln, NE, USA', lat: 40.8136, lon: -96.7026 },
   { label: 'Kansas City, MO, USA', lat: 39.0997, lon: -94.5786 },
   { label: 'Dallas, TX, USA', lat: 32.7767, lon: -96.797 },
+  { label: 'Atlanta, GA, USA', lat: 33.749, lon: -84.388 },
+  { label: 'Indianapolis, IN, USA', lat: 39.7684, lon: -86.1581 },
+  { label: 'St. Louis, MO, USA', lat: 38.627, lon: -90.1994 },
+  { label: 'Minneapolis, MN, USA', lat: 44.9778, lon: -93.265 },
+  { label: 'Salt Lake City, UT, USA', lat: 40.7608, lon: -111.891 },
+  { label: 'Phoenix, AZ, USA', lat: 33.4484, lon: -112.074 },
+  { label: 'Los Angeles, CA, USA', lat: 34.0522, lon: -118.2437 },
+  { label: 'Seattle, WA, USA', lat: 47.6062, lon: -122.3321 },
 ];
 
 export class ApiError extends Error {

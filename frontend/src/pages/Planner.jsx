@@ -5,42 +5,54 @@ import {
   Paper,
   Stack,
   Chip,
-  Button,
   Divider,
   Slider,
   IconButton,
   Tooltip,
+  Alert,
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import MapIcon from '@mui/icons-material/Map';
 import LayersIcon from '@mui/icons-material/Layers';
 import RouteIcon from '@mui/icons-material/Route';
-import TimerIcon from '@mui/icons-material/Timer';
-import StraightenIcon from '@mui/icons-material/Straighten';
 import StarIcon from '@mui/icons-material/Star';
-import TuneIcon from '@mui/icons-material/Tune';
 import dayjs from 'dayjs';
 
 import AppHeader from '../components/AppHeader';
 import ShellLayout from '../components/ShellLayout';
 import RiskBadge from '../components/RiskBadge';
+import TripForm from '../components/TripForm';
 import { getMockPlanFixture } from '../api/client';
+import { usePlanTrip } from '../api/queries';
 import {
   formatMiles,
   formatDuration,
-  formatDateTime,
-  formatWeight,
 } from '../lib/formatters';
 import { RISK_CONFIG } from '../lib/risk';
 
 export default function Planner() {
-  const [plan] = useState(() => getMockPlanFixture());
+  const [plan, setPlan] = useState(() => getMockPlanFixture());
   const [selectedRouteId, setSelectedRouteId] = useState(
-    plan.recommended_route_id || plan.routes[0]?.id
+    () => plan.recommended_route_id || plan.routes[0]?.id
   );
   const [sliderHour, setSliderHour] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [serverError, setServerError] = useState(null);
+
+  const planTripMutation = usePlanTrip();
+
+  const handlePlanSubmit = async (formData) => {
+    setServerError(null);
+    try {
+      const response = await planTripMutation.mutateAsync(formData);
+      setPlan(response);
+      setSelectedRouteId(response.recommended_route_id || response.routes[0]?.id);
+      setSliderHour(0);
+    } catch (err) {
+      setServerError(err.message || 'Failed to calculate safe routes. Please try again.');
+    }
+  };
 
   const selectedRoute =
     plan.routes.find((r) => r.id === selectedRouteId) || plan.routes[0];
@@ -49,55 +61,31 @@ export default function Planner() {
   const currentSliderTime = departureDayjs.add(sliderHour, 'hour');
 
   // -------------------------------------------------------------------------
-  // Left Panel: Trip Info & Route Cards
+  // Left Panel: Trip Form & Evaluated Route Cards
   // -------------------------------------------------------------------------
   const leftPanelContent = (
     <Box sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-      {/* Active Trip Header */}
-      <Paper sx={{ p: 2, bgcolor: 'background.default', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1 }}>
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
-            Current Trip Corridor
-          </Typography>
-          <Chip label={`${plan.meta.sampling_interval_miles} mi intervals`} size="small" variant="outlined" />
-        </Stack>
+      {/* Trip Planning Form (Step 9) */}
+      <TripForm
+        onSubmit={handlePlanSubmit}
+        isSubmitting={planTripMutation.isPending}
+        serverError={serverError}
+      />
 
-        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-          Chicago, IL → Denver, CO
-        </Typography>
-
-        <Stack direction="row" spacing={2} sx={{ mt: 1.5, color: 'text.secondary' }}>
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            <TimerIcon sx={{ fontSize: 16, color: 'primary.main' }} />
-            <Typography variant="caption">{formatDateTime(plan.meta.departure_time)}</Typography>
-          </Stack>
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            <StraightenIcon sx={{ fontSize: 16, color: 'secondary.main' }} />
-            <Typography variant="caption">Cargo: {formatWeight(plan.meta.load_weight_lb)}</Typography>
-          </Stack>
-        </Stack>
-      </Paper>
-
-      {/* Trip Form Module Preview */}
-      <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <TuneIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-            <Typography variant="subtitle2">Trip Configuration</Typography>
-          </Stack>
-          <Button size="small" variant="text" sx={{ p: 0, minWidth: 'auto', fontSize: '0.75rem' }}>
-            Step 9 Form Ready
-          </Button>
-        </Stack>
-        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
-          Autocomplete origins, destinations, truck gross load weights (1–120k lb), and departure date-time bounds.
-        </Typography>
-      </Paper>
+      {/* Warnings Banner if any emitted by backend */}
+      {plan.meta.warnings && plan.meta.warnings.length > 0 && (
+        <Alert severity="warning" sx={{ fontSize: '0.8125rem' }}>
+          {plan.meta.warnings.join(' ')}
+        </Alert>
+      )}
 
       {/* Evaluated Route Alternatives List */}
       <Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-          <Typography variant="subtitle2" sx={{ textTransform: 'uppercase', color: 'text.secondary', fontSize: '0.75rem', letterSpacing: 0.5 }}>
+          <Typography
+            variant="subtitle2"
+            sx={{ textTransform: 'uppercase', color: 'text.secondary', fontSize: '0.75rem', letterSpacing: 0.5 }}
+          >
             Evaluated Routes ({plan.routes.length})
           </Typography>
           <Typography variant="caption" color="text.secondary">
@@ -119,7 +107,11 @@ export default function Planner() {
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                   border: '1px solid',
-                  borderColor: isSelected ? 'primary.main' : isRec ? 'rgba(34, 197, 94, 0.4)' : 'rgba(255, 255, 255, 0.08)',
+                  borderColor: isSelected
+                    ? 'primary.main'
+                    : isRec
+                      ? 'rgba(34, 197, 94, 0.4)'
+                      : 'rgba(255, 255, 255, 0.08)',
                   bgcolor: isSelected ? 'rgba(56, 189, 248, 0.05)' : 'background.paper',
                   '&:hover': {
                     borderColor: isSelected ? 'primary.main' : 'rgba(255, 255, 255, 0.2)',
@@ -129,10 +121,18 @@ export default function Planner() {
                 {/* Route Header */}
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: isSelected ? 'primary.light' : 'text.primary' }}>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: 700, color: isSelected ? 'primary.light' : 'text.primary' }}
+                    >
                       {route.label}
                     </Typography>
-                    <Chip label={`Rank #${route.rank}`} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
+                    <Chip
+                      label={`Rank #${route.rank}`}
+                      size="small"
+                      variant="outlined"
+                      sx={{ height: 20, fontSize: '0.7rem' }}
+                    />
                   </Stack>
 
                   {isRec && (
@@ -176,20 +176,37 @@ export default function Planner() {
                     <Chip
                       label={`${route.summary.severe_miles.toFixed(1)} mi Severe`}
                       size="small"
-                      sx={{ height: 20, fontSize: '0.6875rem', bgcolor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}
+                      sx={{
+                        height: 20,
+                        fontSize: '0.6875rem',
+                        bgcolor: 'rgba(239, 68, 68, 0.15)',
+                        color: '#ef4444',
+                      }}
                     />
                   )}
                   {route.summary.high_miles > 0 && (
                     <Chip
                       label={`${route.summary.high_miles.toFixed(1)} mi High`}
                       size="small"
-                      sx={{ height: 20, fontSize: '0.6875rem', bgcolor: 'rgba(249, 115, 22, 0.15)', color: '#f97316' }}
+                      sx={{
+                        height: 20,
+                        fontSize: '0.6875rem',
+                        bgcolor: 'rgba(249, 115, 22, 0.15)',
+                        color: '#f97316',
+                      }}
                     />
                   )}
                 </Stack>
 
                 {/* Recommendation Reason */}
-                <Box sx={{ p: 1, borderRadius: 1, bgcolor: 'background.default', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <Box
+                  sx={{
+                    p: 1,
+                    borderRadius: 1,
+                    bgcolor: 'background.default',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                  }}
+                >
                   <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontStyle: 'italic' }}>
                     &ldquo;{route.recommendation_reason}&rdquo;
                   </Typography>
@@ -290,29 +307,29 @@ export default function Planner() {
         </Box>
 
         <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-          Corridor Map Foundation Ready (Step 8)
+          Corridor Route Visualization (Step 11 & 12)
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary', maxWidth: 480, mb: 3 }}>
-          MapLibre GL basemap and route lines (Step 11) with 0–48h dynamic forecast heatmap overlay (Step 12) will bind to this viewport.
+          MapLibre GL basemap with 3 interactive routes, checkpoint safety markers, and the 0–48h dynamic forecast heatmap overlay.
         </Typography>
 
         {/* Corridor Preview Stat Cards */}
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ width: '100%', maxWidth: 640 }}>
           <Paper sx={{ p: 2, flex: 1, bgcolor: 'rgba(17, 24, 39, 0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <Typography variant="caption" color="text.secondary">
-              Origin Coordinate
+              Corridor Distance
             </Typography>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {plan.meta.origin?.label || 'Chicago, IL (41.88, -87.63)'}
+              {formatMiles(selectedRoute?.distance_miles)}
             </Typography>
           </Paper>
 
           <Paper sx={{ p: 2, flex: 1, bgcolor: 'rgba(17, 24, 39, 0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <Typography variant="caption" color="text.secondary">
-              Destination Coordinate
+              Travel Duration
             </Typography>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {plan.meta.destination?.label || 'Denver, CO (39.74, -104.99)'}
+              {formatDuration(selectedRoute?.duration_minutes)}
             </Typography>
           </Paper>
 
@@ -398,7 +415,7 @@ export default function Planner() {
 
   return (
     <ShellLayout
-      header={<AppHeader />}
+      header={<AppHeader onRefreshPlan={() => handlePlanSubmit(plan.meta)} />}
       leftPanel={leftPanelContent}
       mapArea={mapAreaContent}
       bottomPanel={bottomPanelContent}

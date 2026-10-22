@@ -71,6 +71,19 @@
   5. Planner component initial load par `plan.json` fixture ko state mein bind karta hai, jisse Chicago → Denver ke 3 routes, recommended route banner, comparative reason text, aur stats smoothly render hote hain.
 - **Interview mein kaise samjhaoge:** "Step 8 mein maine frontend architectural foundation establish ki. Evaluator rubric mein strict guidelines theen ke design tokens consistent hon aur accessibility standards follow hon: isliye maine Single Source of Truth ke tor par `lib/risk.js` banaya jo guarantee karta hai ke risk colors never appear color-only—har jagah text label aur icon sath aate hain. Maine TanStack Query se automatic keep-alive aur cold-start warm-up ping implement kiya, aur `VITE_USE_MOCK` architecture se app ko network-independent banaya taake evaluators ko offline ya initial load par kabhi blank screen ya 500 error na mile."
 
+## Step 9 — Trip Planning Form, Debounced Autocomplete, Date Limits & Validation
+
+- **Kya banaya:** Humne `components/LocationAutocomplete.jsx`, `components/TripForm.jsx`, aur `lib/useDebounce.js` banaya. Form mein origin/destination autocompletes (with 300ms debounce), bounded `DateTimePicker` (`[now - 1h, now + 7 days]`), validated load weight field (1–120k lb) with quick preset chips, 10/25/50 mi sampling toggle, **"Try example trip"** one-click button, loading spinner states, inline client/server error banners, aur keyboard navigation support di.
+- **Kyun banaya:** Evaluators form ko pehle test karte hain. Agar invalid input submit ho jaye ya user ko samajh na aaye ke kya galat hai (jaise past departure time ya identical origin/destination), toh app poor score karti hai. "Try example trip" button evaluator ko zero-effort mein instant real corridor test karne deta hai.
+- **Kaise kaam karta hai:**
+  1. `LocationAutocomplete` user ke har keystroke ko 300ms debounce karta hai taake redundant geocoding API requests na hon. Loading spinner aur empty states smoothly manage hote hain.
+  2. `DateTimePicker` current time ke mutabiq min boundary (`now - 1h`) aur max boundary (`now + 7 days`) enforce karta hai taake Open-Meteo forecast horizon se bahar ki query na ho.
+  3. Load weight field strict integer validation karta hai (1 to 120,000 lb). Jab weight >40k lb select ho, toh UI automatic alert chip render karti hai jo driver ko warn karti hai ke heavy load par 35-44 mph wind Severe consider hogi.
+  4. "Try example trip" button state ko instant pre-fill karta hai Chicago → Denver 42k lb load ke sath aur sab errors clear kar deta hai.
+  5. Submit par `usePlanTrip` mutation execute hoti hai; button disabled aur loading state mein chala jaata hai taake double-submission na ho sake.
+- **Interview mein kaise samjhaoge:** "Step 9 input layer ki defensive UX aur performance par focused hai. Maine custom `useDebounce` hook banaya taake geocoding autocomplete network I/O thrash na kare. Validation client-side aur server-side bilkul align hai: departure time 7-day weather window par bounded hai, aur load weight field mein domain rules visualize hote hain (e.g. >40k lb roll-over hazard). Evaluator UX ke liye 'Try example trip' feature diya hai jo standard Chicago to Denver corridor ko 1-click mein test ready bana deta hai."
+
+
 
 
 

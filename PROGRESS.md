@@ -11,7 +11,7 @@
 - [x] **Step 6 — Recommendation engine (pure) + tests**
 - [x] **Step 7 — `/api/plan/` orchestrator**
 - [x] **Step 8 — Frontend foundation**
-- [ ] **Step 9 — Trip form**
+- [x] **Step 9 — Trip form**
 - [ ] **Step 10 — Results: route cards + recommendation**
 - [ ] **Step 11 — Map: routes + checkpoints**
 - [ ] **Step 12 — Heatmap + 0–48h slider**
@@ -71,3 +71,8 @@
 - **What changed:** Configured MUI dark theme tokens (8px spacing scale, single 8px border radius, 2 font weights, centralized risk palette in `theme/theme.js` and `lib/risk.js` enforcing text + icon accompaniment), implemented standard value formatters (`lib/formatters.js`), typed API client with `VITE_USE_MOCK` offline fixture support and error mapping (`api/client.js`), TanStack Query hooks with `/api/health/` warm-up query on load (`api/queries.js`), created reusable `RiskBadge`, `AppHeader`, responsive 3-panel `ShellLayout` (left panel, map area, bottom panel), and wired `pages/Planner.jsx` rendering the complete shell layout with mock data from `plan.json`.
 - **Files touched:** `frontend/src/lib/risk.js`, `frontend/src/lib/formatters.js`, `frontend/src/theme/theme.js`, `frontend/src/api/client.js`, `frontend/src/api/queries.js`, `frontend/src/components/RiskBadge.jsx`, `frontend/src/components/AppHeader.jsx`, `frontend/src/components/ShellLayout.jsx`, `frontend/src/pages/Planner.jsx`, `frontend/src/App.jsx`, `PROGRESS.md`, `docs/LEARNING.md`.
 - **How to verify:** Run `npm --prefix frontend run lint` (0 warnings), `npm --prefix frontend run build` (builds successfully), and `pytest backend` (113 passing). App renders responsive shell with mock data from `frontend/src/api/fixtures/plan.json` with 0 console errors.
+
+### Step 9 — Trip form
+- **What changed:** Created custom debounce hook (`lib/useDebounce.js`), debounced location autocomplete component (`components/LocationAutocomplete.jsx`) with async geocode search, loading indicators, and empty states; built comprehensive trip configuration form (`components/TripForm.jsx`) with origin/destination autocompletes, bounded `DateTimePicker` (`[now - 1h, now + 7 days]`), validated cargo load weight field (1–120,000 lb) with quick weight preset chips and hazard elevation warning banners, sampling interval selector (10/25/50 mi), one-click **"Try example trip"** button, submit button with disabled/loading spinner states, and inline server error alerts; wired `TripForm` into `pages/Planner.jsx` with `usePlanTrip` mutation.
+- **Files touched:** `frontend/src/lib/useDebounce.js`, `frontend/src/api/client.js`, `frontend/src/components/LocationAutocomplete.jsx`, `frontend/src/components/TripForm.jsx`, `frontend/src/pages/Planner.jsx`, `PROGRESS.md`, `docs/LEARNING.md`.
+- **How to verify:** Run `npm --prefix frontend run lint` (0 warnings), `npm --prefix frontend run build` (builds successfully), and `pytest backend` (113 passing). In browser: invalid inputs show clear inline errors (e.g. past departure, invalid weight, identical origin/destination), "Try example trip" button pre-fills Chicago → Denver in one click, and keyboard navigation works smoothly.
