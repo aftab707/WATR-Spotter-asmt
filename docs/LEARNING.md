@@ -59,6 +59,19 @@
   8. Output Section 5 JSON format mein return hota hai.
 - **Interview mein kaise samjhaoge:** "Step 7 backend ka capstone orchestrator hai. Maine Decorator aur Facade patterns use kiye hain taake views thin rahen aur business logic `orchestrator.py` mein encapsulated ho. Performance ke liye sab routes ke checkpoints ko deduplicate karke single batched weather call bheji jaati hai jo network round-trips ko 3x reduce karti hai. Humne DRF throttling (30 req/min), strict 422/502/504 error mappings, aur automated contract verification ensure ki hai jo exported fixture `plan.json` se frontend mock mode ko feed karti hai."
 
+## Step 8 — Frontend Foundation, MUI Dark Theme Tokens, API Client & Shell Layout
+
+- **Kya banaya:** Humne frontend foundation build kiya jismein centralized risk palette aur accessibility rules (`lib/risk.js`), universal value formatters (`lib/formatters.js`), refined MUI dark theme tokens (8px spacing, 8px border radius, 2 font weights), typed API client (`api/client.js`) with `VITE_USE_MOCK` offline fixture support, TanStack Query hooks with `/api/health/` warm-up call (`api/queries.js`), reusable `RiskBadge`, `AppHeader`, responsive 3-panel `ShellLayout`, aur `pages/Planner.jsx` banaya jo mock data se render karta hai.
+- **Kyun banaya:** Section 8 UI/UX quality bar require karta hai ke design system consistent ho (ek hi spacing scale, ek hi border radius, numbers ka uniform format, aur colors kabhi akele use na hon balke text/icon lazmi sath hon). Saath hi app ko ek resilient architecture chahiye tha jo backend offline hone par bhi mock mode mein chal sake aur TanStack Query se backend ko wake-up ping bhej sake.
+- **Kaise kaam karta hai:**
+  1. `lib/risk.js` mein 5 tiers (Low, Moderate, High, Severe, No Travel) define hain jahan har tier ka color, contrast text, label, aur MUI icon component mapped hai.
+  2. `RiskBadge` component render karte waqt invariant enforce karta hai: color chip ke andar label aur specific icon dono render hote hain taake color-blind users ya high contrast mode mein koi ambiguity na ho.
+  3. `ShellLayout` screen ko 3 distinct areas mein divide karta hai: Left panel (fixed width 430px) for input and route cards, Center flex area for Map Libre canvas, aur Bottom panel for the 48h heatmap timeline slider.
+  4. `useHealthCheck` query component mount par execute hoti hai jo cold backend ko warm-up karti hai aur top bar mein live connection status dikhati hai.
+  5. Planner component initial load par `plan.json` fixture ko state mein bind karta hai, jisse Chicago → Denver ke 3 routes, recommended route banner, comparative reason text, aur stats smoothly render hote hain.
+- **Interview mein kaise samjhaoge:** "Step 8 mein maine frontend architectural foundation establish ki. Evaluator rubric mein strict guidelines theen ke design tokens consistent hon aur accessibility standards follow hon: isliye maine Single Source of Truth ke tor par `lib/risk.js` banaya jo guarantee karta hai ke risk colors never appear color-only—har jagah text label aur icon sath aate hain. Maine TanStack Query se automatic keep-alive aur cold-start warm-up ping implement kiya, aur `VITE_USE_MOCK` architecture se app ko network-independent banaya taake evaluators ko offline ya initial load par kabhi blank screen ya 500 error na mile."
+
+
 
 
 

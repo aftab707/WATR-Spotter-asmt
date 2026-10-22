@@ -10,7 +10,7 @@
 - [x] **Step 5 — Routing + geocoding services**
 - [x] **Step 6 — Recommendation engine (pure) + tests**
 - [x] **Step 7 — `/api/plan/` orchestrator**
-- [ ] **Step 8 — Frontend foundation**
+- [x] **Step 8 — Frontend foundation**
 - [ ] **Step 9 — Trip form**
 - [ ] **Step 10 — Results: route cards + recommendation**
 - [ ] **Step 11 — Map: routes + checkpoints**
@@ -66,3 +66,8 @@
 - **What changed:** Implemented input validation and Section 5 response serializers (`serializers.py`), trip planning orchestrator service (`services/orchestrator.py`), DRF view endpoint with 30/min rate throttling, HTTP 422 validation mapping, HTTP 502 upstream failure handling, and HTTP 504 timeout mapping (`views.py`, `urls.py`); unified route simplification, uniform checkpoint sampling, monotonic ETAs, single batch cached weather fetch, checkpoint risk evaluation with gross load rules, route summaries, recommendation ranking, and 0-48h forecast heatmap series matrix; added comprehensive contract tests and exported realistic fixture `frontend/src/api/fixtures/plan.json`.
 - **Files touched:** `backend/planner/serializers.py`, `backend/planner/services/orchestrator.py`, `backend/planner/views.py`, `backend/planner/urls.py`, `backend/config/settings.py`, `backend/planner/tests/test_orchestrator.py`, `backend/scripts/generate_plan_fixture.py`, `frontend/src/api/fixtures/plan.json`, `PROGRESS.md`, `docs/LEARNING.md`.
 - **How to verify:** Run `pytest backend` (all 113 tests pass with 94% coverage), `ruff check backend`, `npm --prefix frontend run lint`, and `npm --prefix frontend run build`.
+
+### Step 8 — Frontend foundation
+- **What changed:** Configured MUI dark theme tokens (8px spacing scale, single 8px border radius, 2 font weights, centralized risk palette in `theme/theme.js` and `lib/risk.js` enforcing text + icon accompaniment), implemented standard value formatters (`lib/formatters.js`), typed API client with `VITE_USE_MOCK` offline fixture support and error mapping (`api/client.js`), TanStack Query hooks with `/api/health/` warm-up query on load (`api/queries.js`), created reusable `RiskBadge`, `AppHeader`, responsive 3-panel `ShellLayout` (left panel, map area, bottom panel), and wired `pages/Planner.jsx` rendering the complete shell layout with mock data from `plan.json`.
+- **Files touched:** `frontend/src/lib/risk.js`, `frontend/src/lib/formatters.js`, `frontend/src/theme/theme.js`, `frontend/src/api/client.js`, `frontend/src/api/queries.js`, `frontend/src/components/RiskBadge.jsx`, `frontend/src/components/AppHeader.jsx`, `frontend/src/components/ShellLayout.jsx`, `frontend/src/pages/Planner.jsx`, `frontend/src/App.jsx`, `PROGRESS.md`, `docs/LEARNING.md`.
+- **How to verify:** Run `npm --prefix frontend run lint` (0 warnings), `npm --prefix frontend run build` (builds successfully), and `pytest backend` (113 passing). App renders responsive shell with mock data from `frontend/src/api/fixtures/plan.json` with 0 console errors.
