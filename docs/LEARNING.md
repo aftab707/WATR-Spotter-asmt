@@ -119,6 +119,19 @@
   5. UI mein explicit difference bataya gaya hai: Slider "Area forecast at selected time" show karta hai, jabke Checkpoint markers "Weather at truck's ETA" show karte hain.
 - **Interview mein kaise samjhaoge:** "Step 12 frontend performance engineering ka showcase hai. Maine evaluation criteria ke do critical rules satisfy kiye: pehla, slider scrubbing 100% client-side memory se read hoti hai jismein 0 network requests hoti hain (Network DevTools mein verifyable hai); doosra, `requestAnimationFrame` throttling se 60fps silky smooth interaction milti hai. Saath hi UX mein weather ontology ko clarify kiya hai taake user ko confusion na ho ke slider area weather dikha raha hai jabke checkpoint cards truck arrival time ka weather dikhate hain."
 
+## Step 13 — Checkpoint Table, Distance-Proportional Risk Strip & Camera FlyTo
+
+- **Kya banaya:** Humne do important UI components banaye: `RiskStrip.jsx` aur `CheckpointTable.jsx`. `RiskStrip` route ki total distance ke hisab se distance-proportional colored bar display karta hai jismein har segment ki width `(segment_miles / total_distance) * 100%` hoti hai aur color risk tier ke mutabiq hota hai. `CheckpointTable` route ke tamam checkpoints ko mile ascending order mein display karta hai (surfacing: mile, arrival ETA, risk badge, wind speed, rain/snow inches/hr, drivers, cargo load rule, aur segment miles) with quick risk filter chips aur zero-CLS pagination. Saath hi map camera interaction banaya: strip segment ya table row par click karne se map camera smooth `flyTo` animation ke sath us checkpoint par zoom aur center ho jata hai aur popup open karta hai.
+- **Kyun banaya:** Evaluators route metrics ki accuracy aur transparency test karte hain. Sirf summary number (e.g. "45 miles severe") dekhna kafi nahi hota; commercial driver aur dispatcher ko exact location dekhni hoti hai ke mile 312 par 42 mph crosswind aur heavy rain kis point par hit karegi. Saath hi `RiskStrip` route cards mein at-a-glance visualization deta hai ke hazard route ke shuru mein hai, beech mein, ya end par.
+- **Kaise kaam karta hai:**
+  1. `RiskStrip` Step 3 ke Voronoi segment miles (`sum(segment_miles) == route_distance`) ko use karke mathematically accurate percentage widths compute karta hai. Is tarah koi fake visual scaling nahi hoti.
+  2. `CheckpointTable` data ko strict mile ascending order mein sort karta hai aur filter chips ("All", "High / Severe", "Load Rule") se dispatchers ko critical risk spots filter karne ki saholat deta hai.
+  3. Jab user kisi strip segment ya table row ke focus button par click karta hai, `focusedCheckpoint` state update hoti hai.
+  4. `RouteMap` component `useEffect` mein `mapRef.current.flyTo({ center: [lon, lat], zoom: 7.5, duration: 800 })` call karta hai aur `selectedCheckpoint` set karke popup khol deta hai.
+  5. `Planner.jsx` ke bottom panel mein slick tab switcher banaya gaya hai jo user ko "0–48h Timeline Forecast" aur "Checkpoints & Risk Strip" ke darmiyan smoothly toggle karne deta hai.
+- **Interview mein kaise samjhaoge:** "Step 13 tabular transparency aur two-way spatial synchronisation establish karta hai. Maine Step 3 ke pure mathematical geometry outputs—specifically midpoint Voronoi segment miles—ko frontend visual bar (`RiskStrip`) ke sath 1-to-1 bind kiya hai taake har segment ki physical width route ke exact miles represent kare. Saath hi MapLibre ke imperative `flyTo` camera controls ko declarative React state ke sath connect kiya hai, jis se user table row ya risk bar segment par click karke direct corridor ke specific coordinates par smoothly navigate kar sakta hai with zero layout shift."
+
+
 
 
 

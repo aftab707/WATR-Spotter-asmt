@@ -5,8 +5,12 @@ import {
   Paper,
   Stack,
   Alert,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import AltRouteIcon from '@mui/icons-material/AltRoute';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import TableRowsIcon from '@mui/icons-material/TableRows';
 
 import AppHeader from '../components/AppHeader';
 import ShellLayout from '../components/ShellLayout';
@@ -16,6 +20,8 @@ import RouteComparison from '../components/RouteComparison';
 import RouteCardSkeleton from '../components/RouteCardSkeleton';
 import RouteMap from '../components/RouteMap';
 import HeatmapSlider from '../components/HeatmapSlider';
+import RiskStrip from '../components/RiskStrip';
+import CheckpointTable from '../components/CheckpointTable';
 import { getMockPlanFixture } from '../api/client';
 import { usePlanTrip } from '../api/queries';
 
@@ -25,6 +31,8 @@ export default function Planner() {
     () => plan.recommended_route_id || plan.routes[0]?.id
   );
   const [hoveredRouteId, setHoveredRouteId] = useState(null);
+  const [focusedCheckpoint, setFocusedCheckpoint] = useState(null);
+  const [bottomTab, setBottomTab] = useState('timeline'); // 'timeline' | 'checkpoints'
   const [sliderHour, setSliderHour] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(true);
@@ -55,6 +63,7 @@ export default function Planner() {
       setPlan(response);
       setSelectedRouteId(response.recommended_route_id || response.routes[0]?.id);
       setSliderHour(0);
+      setFocusedCheckpoint(null);
     } catch (err) {
       setServerError(err.message || 'Failed to calculate safe routes. Please try again.');
     }
@@ -64,6 +73,10 @@ export default function Planner() {
   const fastestRouteId = [...plan.routes].sort(
     (a, b) => a.duration_minutes - b.duration_minutes
   )[0]?.id;
+
+  // Active selected route object
+  const activeRoute =
+    plan.routes.find((r) => r.id === selectedRouteId) || plan.routes[0];
 
   // -------------------------------------------------------------------------
   // Left Panel: Trip Form, Comparison View & Evaluated Route Cards
@@ -139,6 +152,7 @@ export default function Planner() {
                 onSelect={() => setSelectedRouteId(route.id)}
                 onMouseEnter={() => setHoveredRouteId(route.id)}
                 onMouseLeave={() => setHoveredRouteId(null)}
+                onSelectCheckpoint={(cp) => setFocusedCheckpoint(cp)}
               />
             ))}
           </Stack>
@@ -162,22 +176,97 @@ export default function Planner() {
       showHeatmap={showHeatmap}
       onToggleHeatmap={() => setShowHeatmap((prev) => !prev)}
       departureTime={plan.meta.departure_time}
+      focusedCheckpoint={focusedCheckpoint}
     />
   );
 
   // -------------------------------------------------------------------------
-  // Bottom Panel: 0–48h Forecast Timeline Slider (Step 12)
+  // Bottom Panel: 0–48h Forecast Timeline Slider + Checkpoint Table & Risk Strip (Step 12 & 13)
   // -------------------------------------------------------------------------
   const bottomPanelContent = (
-    <HeatmapSlider
-      sliderHour={sliderHour}
-      onSliderChange={(val) => setSliderHour(val)}
-      departureTime={plan.meta.departure_time}
-      isPlaying={isPlaying}
-      onTogglePlay={() => setIsPlaying((prev) => !prev)}
-      showHeatmap={showHeatmap}
-      onToggleHeatmap={() => setShowHeatmap((prev) => !prev)}
-    />
+    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'background.default', px: 2 }}>
+        <Tabs
+          value={bottomTab}
+          onChange={(_, val) => setBottomTab(val)}
+          textColor="primary"
+          indicatorColor="primary"
+          sx={{
+            minHeight: 40,
+            '& .MuiTab-root': {
+              minHeight: 40,
+              py: 0.75,
+              px: 2,
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              textTransform: 'none',
+            },
+          }}
+        >
+          <Tab
+            value="timeline"
+            icon={<AccessTimeIcon sx={{ fontSize: 16 }} />}
+            iconPosition="start"
+            label="0–48h Timeline Forecast"
+          />
+          <Tab
+            value="checkpoints"
+            icon={<TableRowsIcon sx={{ fontSize: 16 }} />}
+            iconPosition="start"
+            label={`Checkpoints & Risk Strip (${activeRoute?.checkpoints?.length || 0})`}
+          />
+        </Tabs>
+      </Box>
+
+      {bottomTab === 'timeline' ? (
+        <HeatmapSlider
+          sliderHour={sliderHour}
+          onSliderChange={(val) => setSliderHour(val)}
+          departureTime={plan.meta.departure_time}
+          isPlaying={isPlaying}
+          onTogglePlay={() => setIsPlaying((prev) => !prev)}
+          showHeatmap={showHeatmap}
+          onToggleHeatmap={() => setShowHeatmap((prev) => !prev)}
+        />
+      ) : (
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.75, maxHeight: { xs: 360, md: 420 }, overflowY: 'auto' }}>
+          {activeRoute && (
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 1.5,
+                bgcolor: 'background.paper',
+                borderRadius: 2,
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+              }}
+            >
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  {activeRoute.label} Corridor Risk Exposure
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Click any segment to center map on checkpoint
+                </Typography>
+              </Stack>
+              <RiskStrip
+                checkpoints={activeRoute.checkpoints}
+                totalDistanceMiles={activeRoute.distance_miles}
+                height={14}
+                showLabels
+                onSelectCheckpoint={(cp) => setFocusedCheckpoint(cp)}
+                selectedCheckpointIndex={focusedCheckpoint?.index}
+              />
+            </Paper>
+          )}
+
+          <CheckpointTable
+            checkpoints={activeRoute?.checkpoints || []}
+            onSelectCheckpoint={(cp) => setFocusedCheckpoint(cp)}
+            selectedCheckpointIndex={focusedCheckpoint?.index}
+          />
+        </Box>
+      )}
+    </Box>
   );
 
   return (

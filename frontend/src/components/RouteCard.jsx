@@ -15,6 +15,7 @@ import BlockIcon from '@mui/icons-material/Block';
 import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
 
 import RiskBadge from './RiskBadge';
+import RiskStrip from './RiskStrip';
 import { formatMiles, formatDuration, formatTimeOnly } from '../lib/formatters';
 
 /**
@@ -34,6 +35,7 @@ export default function RouteCard({
   onMouseEnter,
   onMouseLeave,
   isFastest = false,
+  onSelectCheckpoint,
 }) {
   const isRec = route.is_recommended;
   const hasNoTravel = route.summary.no_travel_miles > 0;
@@ -258,6 +260,18 @@ export default function RouteCard({
         )}
       </Stack>
 
+      {/* Distance-Proportional Risk Strip (Step 13) */}
+      {route.checkpoints && route.checkpoints.length > 0 && (
+        <Box sx={{ mb: 1.5 }}>
+          <RiskStrip
+            checkpoints={route.checkpoints}
+            totalDistanceMiles={route.distance_miles}
+            height={8}
+            onSelectCheckpoint={onSelectCheckpoint}
+          />
+        </Box>
+      )}
+
       {/* "Why this route" Comparative Explanation Callout */}
       <Box
         sx={{
@@ -335,4 +349,5 @@ RouteCard.propTypes = {
   onMouseEnter: PropTypes.func,
   onMouseLeave: PropTypes.func,
   isFastest: PropTypes.bool,
+  onSelectCheckpoint: PropTypes.func,
 };

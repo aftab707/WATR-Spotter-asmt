@@ -53,12 +53,29 @@ export default function RouteMap({
   showHeatmap = true,
   onToggleHeatmap,
   departureTime,
+  focusedCheckpoint = null,
 }) {
   const mapRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedCheckpoint, setSelectedCheckpoint] = useState(null);
   const [selectedAreaPoint, setSelectedAreaPoint] = useState(null);
   const [showLegend, setShowLegend] = useState(true);
+
+  // Focus map camera on checkpoint when selected from table or risk strip
+  useEffect(() => {
+    if (focusedCheckpoint && mapRef.current) {
+      mapRef.current.flyTo({
+        center: [Number(focusedCheckpoint.lon), Number(focusedCheckpoint.lat)],
+        zoom: 7.5,
+        duration: 800,
+      });
+      setSelectedCheckpoint({
+        ...focusedCheckpoint,
+        lon: Number(focusedCheckpoint.lon),
+        lat: Number(focusedCheckpoint.lat),
+      });
+    }
+  }, [focusedCheckpoint]);
 
   const activeRoute = useMemo(() => {
     return routes.find((r) => r.id === (hoveredRouteId || selectedRouteId)) || routes[0] || null;
@@ -842,4 +859,8 @@ RouteMap.propTypes = {
   showHeatmap: PropTypes.bool,
   onToggleHeatmap: PropTypes.func,
   departureTime: PropTypes.string,
+  focusedCheckpoint: PropTypes.shape({
+    lat: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    lon: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  }),
 };
