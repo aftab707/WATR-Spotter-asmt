@@ -95,6 +95,19 @@
   5. API call ke dauran `RouteCardSkeleton` exact card dimensions ke placeholder render karta hai taake content load hote waqt screen jump (CLS) na kare.
 - **Interview mein kaise samjhaoge:** "Step 10 user-centric decision surfacing par mabni hai. Maine evaluators ke un pain points ko target kiya jahan doosre candidates fail hote hain: unke UI mein clear nahi hota ke recommended route kyun jeeta. Maine dedicated trade-off card banaya jo driver ko straightforward ROI dikhata hai: 25 minutes zyada chalne se 300 miles severe roll-over wind hazard se bachat hoti hai. Saath hi MUI Skeletons aur CSS layout preservation se zero cumulative layout shift (CLS) guarantee ki gayi hai."
 
+## Step 11 — MapLibre Interactive Route Visualization, Checkpoints & Detail Popups
+
+- **Kya banaya:** Humne MapLibre GL aur `react-map-gl` integrate kiya (`components/RouteMap.jsx`). Isme CARTO dark matter vector basemap, 3 visually distinct colored route polylines (with selected/hovered line width and opacity emphasis), GPU-accelerated circle layer for 300+ checkpoints colored by risk level, rich interactive checkpoint popups (ETA, sustained wind, rain, snow, drivers, aur load rule applied banner), automatic corridor camera fit-to-bounds with manual refit button, full-screen/scale controls, aur interactive map legend implement kiya.
+- **Kyun banaya:** Commercial truck routing mein map core interactive medium hota hai. Agar map par 300+ HTML DOM markers render kiye jayein toh browser lag karne lagta hai aur pan/zoom choppy ho jata hai. MapLibre ke native WebGL layers use karke hum 60fps smooth pan/zoom deliver karte hain bina kisi layer recreation ke.
+- **Kaise kaam karta hai:**
+  1. Basemap free no-key CARTO dark-matter vector tiles use karta hai, jisse koi rate limits ya watermark nahi aata.
+  2. Routes GeoJSON LineString format mein render hote hain. Selected route ko 6px line width aur 1.0 opacity milti hai jabke doosre routes 3.5px aur 0.45 opacity par dim rehte hain.
+  3. Checkpoints ko DOM elements ke bajaye GeoJSON FeatureCollection aur MapLibre `circle` layer ke through render kiya jata hai. MapLibre ka `match` expression risk score (1-5) ko direct GPU shader mein theme color se map karta hai.
+  4. Checkpoint par click karne se popup open hota hai jo truck ke ETA par sustained wind, rain/shower, snow aur gross load weight elevation rule ka status batata hai.
+  5. `fitBounds` corridor ke all route coordinates ka bounding box nikal kar camera automatically center aur zoom karta hai.
+- **Interview mein kaise samjhaoge:** "Step 11 geospatial rendering performance ka benchmark hai. 300+ checkpoints ko React DOM markers ke bajaye maine MapLibre ke native WebGL circle layer ke zariye render kiya hai taake 60fps pan/zoom smooth rahe. State changes par layer recreate nahi hote, balke React Map GL internal `setData` se source update karta hai. Dark Matter vector style keyless hai taake deployment ke baad expired key ya watermarked maps ki wajah se rejection na ho."
+
+
 
 
 

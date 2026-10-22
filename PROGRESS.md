@@ -13,7 +13,7 @@
 - [x] **Step 8 — Frontend foundation**
 - [x] **Step 9 — Trip form**
 - [x] **Step 10 — Results: route cards + recommendation**
-- [ ] **Step 11 — Map: routes + checkpoints**
+- [x] **Step 11 — Map: routes + checkpoints**
 - [ ] **Step 12 — Heatmap + 0–48h slider**
 - [ ] **Step 13 — Checkpoint table + risk strip**
 - [ ] **Step 14 — UX & visual polish**
@@ -81,3 +81,8 @@
 - **What changed:** Created `RouteCard` component displaying evaluated route distance, duration, arrival ETA, Severe/High miles, avg risk score, max risk badge, prominent "Recommended" star badge, and dedicated "Why this route" comparative callout box; built `RouteComparison` view displaying the side-by-side trade-off between the fastest and recommended route (extra minutes vs severe storm miles bypassed); built `RouteCardSkeleton` placeholders for zero-CLS loading states; added empty and error states; synchronized card selection and hover state with corridor previews in `Planner.jsx`.
 - **Files touched:** `frontend/src/components/RouteCard.jsx`, `frontend/src/components/RouteComparison.jsx`, `frontend/src/components/RouteCardSkeleton.jsx`, `frontend/src/pages/Planner.jsx`, `PROGRESS.md`, `docs/LEARNING.md`.
 - **How to verify:** Run `npm --prefix frontend run lint` (0 warnings), `npm --prefix frontend run build` (builds successfully), and `pytest backend` (113 passing). In browser: recommended route is visually prominent; numbers match API data exactly; comparative trade-off card shows extra time vs hazard avoided; skeletons render smoothly during calculation with zero layout shift.
+
+### Step 11 — Map: routes + checkpoints
+- **What changed:** Installed `maplibre-gl` and `react-map-gl`; implemented GPU-accelerated interactive MapLibre map component (`components/RouteMap.jsx`) using free no-key CARTO dark matter vector style; rendered 3 distinct colored route lines with active line width/opacity emphasis; rendered 300+ checkpoints via GeoJSON circle layer dynamically styled by risk level (ensuring smooth 60fps pan/zoom without DOM node bloat or layer recreation); built rich interactive checkpoint popup surfacing ETA, sustained wind speed, rain/showers, snowfall, hazard drivers, and heavy cargo load rule elevation banners; implemented automatic corridor camera fit-to-bounds with manual refit button, scale, fullscreen controls, and interactive map legend; wired route selection and hover callbacks into `Planner.jsx`.
+- **Files touched:** `frontend/package.json`, `frontend/package-lock.json`, `frontend/src/components/RouteMap.jsx`, `frontend/src/pages/Planner.jsx`, `PROGRESS.md`, `docs/LEARNING.md`.
+- **How to verify:** Run `npm --prefix frontend run lint` (0 warnings), `npm --prefix frontend run build` (builds successfully), and `pytest backend` (113 passing). In browser: map renders dark matter style; 3 routes visible with selected route highlighted; checkpoints colored by risk level (green/yellow/orange/red/purple); clicking a checkpoint displays detail popup with weather, ETA, and load rule alert; clicking route selects it; fit-to-bounds automatically frames the corridor.

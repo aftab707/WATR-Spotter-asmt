@@ -4,7 +4,6 @@ import {
   Typography,
   Paper,
   Stack,
-  Chip,
   Divider,
   Slider,
   IconButton,
@@ -13,9 +12,6 @@ import {
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
-import MapIcon from '@mui/icons-material/Map';
-import LayersIcon from '@mui/icons-material/Layers';
-import RouteIcon from '@mui/icons-material/Route';
 import AltRouteIcon from '@mui/icons-material/AltRoute';
 import dayjs from 'dayjs';
 
@@ -26,12 +22,9 @@ import TripForm from '../components/TripForm';
 import RouteCard from '../components/RouteCard';
 import RouteComparison from '../components/RouteComparison';
 import RouteCardSkeleton from '../components/RouteCardSkeleton';
+import RouteMap from '../components/RouteMap';
 import { getMockPlanFixture } from '../api/client';
 import { usePlanTrip } from '../api/queries';
-import {
-  formatMiles,
-  formatDuration,
-} from '../lib/formatters';
 import { RISK_CONFIG } from '../lib/risk';
 
 export default function Planner() {
@@ -57,13 +50,6 @@ export default function Planner() {
       setServerError(err.message || 'Failed to calculate safe routes. Please try again.');
     }
   };
-
-  const activeRoute =
-    plan.routes.find((r) => r.id === (hoveredRouteId || selectedRouteId)) ||
-    plan.routes[0];
-
-  const selectedRoute =
-    plan.routes.find((r) => r.id === selectedRouteId) || plan.routes[0];
 
   // Identify the fastest route candidate among all returned routes
   const fastestRouteId = [...plan.routes].sort(
@@ -156,152 +142,16 @@ export default function Planner() {
   );
 
   // -------------------------------------------------------------------------
-  // Main Area: Interactive Map Canvas Area
+  // Main Area: Interactive RouteMap Component (Step 11)
   // -------------------------------------------------------------------------
   const mapAreaContent = (
-    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      {/* Top Map Floating Toolbar */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 16,
-          left: 16,
-          right: 16,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          zIndex: 10,
-          pointerEvents: 'none',
-        }}
-      >
-        <Paper
-          sx={{
-            px: 2,
-            py: 1,
-            pointerEvents: 'auto',
-            bgcolor: 'rgba(17, 24, 39, 0.88)',
-            backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 2,
-          }}
-        >
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <RouteIcon color="primary" sx={{ fontSize: 22 }} />
-            <Box>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                  {activeRoute?.label}
-                </Typography>
-                {hoveredRouteId && hoveredRouteId !== selectedRouteId && (
-                  <Chip label="Hovered" size="small" sx={{ height: 16, fontSize: '0.625rem' }} />
-                )}
-                {activeRoute?.is_recommended && (
-                  <Chip
-                    label="Recommended"
-                    size="small"
-                    color="success"
-                    sx={{ height: 16, fontSize: '0.625rem', fontWeight: 700 }}
-                  />
-                )}
-              </Stack>
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                {activeRoute?.checkpoints?.length} sampled checkpoints • {activeRoute?.geometry?.coordinates?.length} polyline vertices
-              </Typography>
-            </Box>
-          </Stack>
-        </Paper>
-
-        <Stack direction="row" spacing={1} sx={{ pointerEvents: 'auto' }}>
-          <Chip
-            icon={<MapIcon sx={{ fontSize: 14 }} />}
-            label="CARTO Dark Matter"
-            size="small"
-            sx={{
-              bgcolor: 'rgba(17, 24, 39, 0.85)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
-          />
-          <Chip
-            icon={<LayersIcon sx={{ fontSize: 14 }} />}
-            label="Heatmap Ready"
-            size="small"
-            sx={{
-              bgcolor: 'rgba(17, 24, 39, 0.85)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
-          />
-        </Stack>
-      </Box>
-
-      {/* Map Graphic Canvas Placeholder */}
-      <Box
-        sx={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          p: 4,
-          background: 'radial-gradient(circle at 50% 50%, #172033 0%, #070a13 85%)',
-          textAlign: 'center',
-        }}
-      >
-        <Box
-          sx={{
-            width: 72,
-            height: 72,
-            borderRadius: '50%',
-            bgcolor: 'rgba(56, 189, 248, 0.08)',
-            border: '1px solid rgba(56, 189, 248, 0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            mb: 2,
-          }}
-        >
-          <MapIcon sx={{ fontSize: 36, color: 'primary.main' }} />
-        </Box>
-
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-          Corridor Route Visualization (Step 11 & 12)
-        </Typography>
-        <Typography variant="body2" sx={{ color: 'text.secondary', maxWidth: 480, mb: 3 }}>
-          MapLibre GL basemap with 3 interactive routes, checkpoint safety markers, and the 0–48h dynamic forecast heatmap overlay.
-        </Typography>
-
-        {/* Corridor Preview Stat Cards */}
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ width: '100%', maxWidth: 640 }}>
-          <Paper sx={{ p: 2, flex: 1, bgcolor: 'rgba(17, 24, 39, 0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <Typography variant="caption" color="text.secondary">
-              Corridor Distance
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {formatMiles(selectedRoute?.distance_miles)}
-            </Typography>
-          </Paper>
-
-          <Paper sx={{ p: 2, flex: 1, bgcolor: 'rgba(17, 24, 39, 0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <Typography variant="caption" color="text.secondary">
-              Travel Duration
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {formatDuration(selectedRoute?.duration_minutes)}
-            </Typography>
-          </Paper>
-
-          <Paper sx={{ p: 2, flex: 1, bgcolor: 'rgba(17, 24, 39, 0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <Typography variant="caption" color="text.secondary">
-              Corridor Heatmap Points
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {plan.heatmap.points.length} unique points
-            </Typography>
-          </Paper>
-        </Stack>
-      </Box>
-    </Box>
+    <RouteMap
+      routes={plan.routes}
+      selectedRouteId={selectedRouteId}
+      hoveredRouteId={hoveredRouteId}
+      onSelectRoute={(id) => setSelectedRouteId(id)}
+      loadWeightLb={plan.meta.load_weight_lb}
+    />
   );
 
   // -------------------------------------------------------------------------
