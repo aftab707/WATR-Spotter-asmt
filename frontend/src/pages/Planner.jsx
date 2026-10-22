@@ -193,49 +193,72 @@ export default function Planner() {
   // -------------------------------------------------------------------------
   const mainWorkspaceContent = (
     <Box sx={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
-      {activeTab === 'map' && (
-        <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
-          <RouteMap
-            routes={plan.routes}
-            selectedRouteId={selectedRouteId}
-            hoveredRouteId={hoveredRouteId}
-            onSelectRoute={(id) => setSelectedRouteId(id)}
-            loadWeightLb={plan.meta.load_weight_lb}
-            heatmap={plan.heatmap}
+      {/* 1. Map Canvas View: ALWAYS mounted so WebGL context & cached tiles stay alive */}
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          display: activeTab === 'map' ? 'block' : 'none',
+        }}
+      >
+        <RouteMap
+          routes={plan.routes}
+          selectedRouteId={selectedRouteId}
+          hoveredRouteId={hoveredRouteId}
+          onSelectRoute={(id) => setSelectedRouteId(id)}
+          loadWeightLb={plan.meta.load_weight_lb}
+          heatmap={plan.heatmap}
+          sliderHour={sliderHour}
+          showHeatmap={showHeatmap}
+          onToggleHeatmap={() => setShowHeatmap((prev) => !prev)}
+          departureTime={plan.meta.departure_time}
+          focusedCheckpoint={focusedCheckpoint}
+          activeTab={activeTab}
+        />
+
+        {/* Floating Sleek 0-48h Forecast Timeline Controller (Never crushes the map) */}
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 16,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 'calc(100% - 32px)',
+            maxWidth: 780,
+            zIndex: 10,
+          }}
+        >
+          <HeatmapSlider
             sliderHour={sliderHour}
+            onSliderChange={(val) => setSliderHour(val)}
+            departureTime={plan.meta.departure_time}
+            isPlaying={isPlaying}
+            onTogglePlay={() => setIsPlaying((prev) => !prev)}
             showHeatmap={showHeatmap}
             onToggleHeatmap={() => setShowHeatmap((prev) => !prev)}
-            departureTime={plan.meta.departure_time}
-            focusedCheckpoint={focusedCheckpoint}
           />
-
-          {/* Floating Sleek 0-48h Forecast Timeline Controller (Never crushes the map) */}
-          <Box
-            sx={{
-              position: 'absolute',
-              bottom: 16,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 'calc(100% - 32px)',
-              maxWidth: 780,
-              zIndex: 10,
-            }}
-          >
-            <HeatmapSlider
-              sliderHour={sliderHour}
-              onSliderChange={(val) => setSliderHour(val)}
-              departureTime={plan.meta.departure_time}
-              isPlaying={isPlaying}
-              onTogglePlay={() => setIsPlaying((prev) => !prev)}
-              showHeatmap={showHeatmap}
-              onToggleHeatmap={() => setShowHeatmap((prev) => !prev)}
-            />
-          </Box>
         </Box>
-      )}
+      </Box>
 
+      {/* 2. Checkpoints Tab View: Rendered on top when activeTab === 'checkpoints' */}
       {activeTab === 'checkpoints' && (
-        <Box sx={{ p: { xs: 1.5, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2, height: '100%', overflowY: 'auto' }}>
+        <Box
+          sx={{
+            width: '100%',
+            height: '100%',
+            position: 'relative',
+            zIndex: 2,
+            bgcolor: 'background.default',
+            p: { xs: 1.5, md: 3 },
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            overflowY: 'auto',
+          }}
+        >
           {activeRoute && (
             <Paper
               variant="outlined"
@@ -290,8 +313,22 @@ export default function Planner() {
         </Box>
       )}
 
+      {/* 3. Compare Tab View: Rendered on top when activeTab === 'compare' */}
       {activeTab === 'compare' && (
-        <Box sx={{ p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2.5, height: '100%', overflowY: 'auto' }}>
+        <Box
+          sx={{
+            width: '100%',
+            height: '100%',
+            position: 'relative',
+            zIndex: 2,
+            bgcolor: 'background.default',
+            p: { xs: 2, md: 3 },
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2.5,
+            overflowY: 'auto',
+          }}
+        >
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             Route Alternatives Comparison
           </Typography>
