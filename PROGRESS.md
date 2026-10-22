@@ -6,7 +6,7 @@
 - [x] **Step 1 — API spike (prove the providers before building on them)**
 - [x] **Step 2 — Risk engine (pure) + tests**
 - [x] **Step 3 — Geometry: sampling, ETA, segments, summaries (pure) + tests**
-- [ ] **Step 4 — Weather service**
+- [x] **Step 4 — Weather service**
 - [ ] **Step 5 — Routing + geocoding services**
 - [ ] **Step 6 — Recommendation engine (pure) + tests**
 - [ ] **Step 7 — `/api/plan/` orchestrator**
@@ -46,3 +46,8 @@
 - **What changed:** Implemented pure mathematical modules for route geometry (`logic/geometry.py`), ETA time progression (`logic/eta.py`), and corridor segment allocation/summary (`logic/summary.py`); verified Haversine distance, uniform interval checkpoint sampling (10/25/50 miles) with terminal milestone insertion, RDP polyline decimation (<= 2000 points), monotonic ETA interpolation, exact midpoint segment distance conservation (`sum(segments) == total_distance`), and distance-weighted average risk computation.
 - **Files touched:** `backend/planner/logic/geometry.py`, `backend/planner/logic/eta.py`, `backend/planner/logic/summary.py`, `backend/planner/tests/test_geometry.py`, `backend/planner/tests/test_eta.py`, `backend/planner/tests/test_summary.py`, `PROGRESS.md`.
 - **How to verify:** Run `pytest backend --cov=planner.logic --cov-report=term-missing` to verify all 71 unit tests pass with 99% coverage across all pure logic modules.
+
+### Step 4 — Weather service
+- **What changed:** Implemented Open-Meteo multi-coordinate batch weather client (`services/weather.py`) with automatic chunking (<= 50 points), `ThreadPoolExecutor` concurrency, per-call 8s timeout with 2 retries and backoff, `UpstreamError` mapping, Django cache integration keyed by `(round(lat,2), round(lon,2), date_window)`, `value_at(time)` nearest top-of-hour resolution, and 49-hour heatmap series generation.
+- **Files touched:** `backend/planner/services/weather.py`, `backend/planner/tests/test_weather.py`, `backend/config/settings.py`, `PROGRESS.md`.
+- **How to verify:** Run `pytest backend/planner/tests/test_weather.py --cov=planner.services.weather --cov-report=term-missing` to verify all 12 mock and fixture-driven tests pass with 98% coverage.

@@ -30,6 +30,14 @@
 - **Kaise kaam karta hai:** `sample_checkpoints` 10/25/50 miles par checkpoints generate karta hai aur aakhri destination checkpoint ko ensure karta hai. `eta.py` speed profile se monotonic time interpolate karta hai jo kabhi backwards nahi jaata. `calculate_segment_miles` telescoping midpoint formula use karta hai jiska sum strictly route distance ke barabar hota hai.
 - **Interview mein kaise samjhaoge:** "Step 3 mein maine core geospatial aur temporal math implement kiya. Maine Haversine formula aur Ramer-Douglas-Peucker (RDP) algorithm use karke 10,000+ points ki geometry ko 2,000 points se kam mein simplify kiya taake MapLibre frontend smooth 60fps par pan/zoom kare. Checkpoints ke liye midpoint Voronoi-style segment division implement ki jahan `sum(segment_miles) == route_distance` mathematical guarantee hai, aur ETA interpolation strictly monotonic hai."
 
+## Step 4 — Open-Meteo Batch Weather Service & Caching
+
+- **Kya banaya:** Humne `backend/planner/services/weather.py` mein Open-Meteo batch weather client banaya jo route corridor ke multiple coordinates ko <= 50 ke chunks mein divide karke parallel fetch karta hai, Django cache integration use karta hai, aur ETA matching ke liye `value_at(time)` provide karta hai.
+- **Kyun banaya:** Agar 1,000-mile trip ke 40 checkpoints ke liye 40 separate HTTP calls ki jaateen toh app 15-20 seconds slow ho jaati aur rate-limit hit ho sakti thi. Batching aur chunking se 50+ checkpoints 1 second mein single parallel call se fetch ho jaate hain.
+- **Kaise kaam karta hai:** Service pehle coordinates ko 2 decimal places tak round karke cache check karti hai (`make_weather_cache_key`). Jo points cache mein na hon, unhein 50-point batches mein `ThreadPoolExecutor` ke through Open-Meteo se fetch kiya jaata hai. Per-call 8s timeout aur 2 retries configured hain. Hourly arrays se `rain + showers` aur `snowfall` extract hoti hain aur `value_at()` truck ke exact ETA ka nearest hour lookup karta hai.
+- **Interview mein kaise samjhaoge:** "Weather service ko production-grade performance ke liye design kiya gaya hai. Maine Open-Meteo ka multi-coordinate batching endpoint use kiya jismein chunks maximum 50 points ke banaye jaate hain taake URL length limit cross na ho, aur unhein `ThreadPoolExecutor` se parallel fetch kiya jata hai. Network I/O ko minimise karne ke liye spatial caching implement ki jo `(round(lat,2), round(lon,2), date-window)` par key banti hai, taake nearby checkpoints aur repeated searches zero-latency return hon."
+
+
 
 
 
