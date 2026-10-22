@@ -12,7 +12,7 @@
 - [x] **Step 7 — `/api/plan/` orchestrator**
 - [x] **Step 8 — Frontend foundation**
 - [x] **Step 9 — Trip form**
-- [ ] **Step 10 — Results: route cards + recommendation**
+- [x] **Step 10 — Results: route cards + recommendation**
 - [ ] **Step 11 — Map: routes + checkpoints**
 - [ ] **Step 12 — Heatmap + 0–48h slider**
 - [ ] **Step 13 — Checkpoint table + risk strip**
@@ -76,3 +76,8 @@
 - **What changed:** Created custom debounce hook (`lib/useDebounce.js`), debounced location autocomplete component (`components/LocationAutocomplete.jsx`) with async geocode search, loading indicators, and empty states; built comprehensive trip configuration form (`components/TripForm.jsx`) with origin/destination autocompletes, bounded `DateTimePicker` (`[now - 1h, now + 7 days]`), validated cargo load weight field (1–120,000 lb) with quick weight preset chips and hazard elevation warning banners, sampling interval selector (10/25/50 mi), one-click **"Try example trip"** button, submit button with disabled/loading spinner states, and inline server error alerts; wired `TripForm` into `pages/Planner.jsx` with `usePlanTrip` mutation.
 - **Files touched:** `frontend/src/lib/useDebounce.js`, `frontend/src/api/client.js`, `frontend/src/components/LocationAutocomplete.jsx`, `frontend/src/components/TripForm.jsx`, `frontend/src/pages/Planner.jsx`, `PROGRESS.md`, `docs/LEARNING.md`.
 - **How to verify:** Run `npm --prefix frontend run lint` (0 warnings), `npm --prefix frontend run build` (builds successfully), and `pytest backend` (113 passing). In browser: invalid inputs show clear inline errors (e.g. past departure, invalid weight, identical origin/destination), "Try example trip" button pre-fills Chicago → Denver in one click, and keyboard navigation works smoothly.
+
+### Step 10 — Results: route cards + recommendation
+- **What changed:** Created `RouteCard` component displaying evaluated route distance, duration, arrival ETA, Severe/High miles, avg risk score, max risk badge, prominent "Recommended" star badge, and dedicated "Why this route" comparative callout box; built `RouteComparison` view displaying the side-by-side trade-off between the fastest and recommended route (extra minutes vs severe storm miles bypassed); built `RouteCardSkeleton` placeholders for zero-CLS loading states; added empty and error states; synchronized card selection and hover state with corridor previews in `Planner.jsx`.
+- **Files touched:** `frontend/src/components/RouteCard.jsx`, `frontend/src/components/RouteComparison.jsx`, `frontend/src/components/RouteCardSkeleton.jsx`, `frontend/src/pages/Planner.jsx`, `PROGRESS.md`, `docs/LEARNING.md`.
+- **How to verify:** Run `npm --prefix frontend run lint` (0 warnings), `npm --prefix frontend run build` (builds successfully), and `pytest backend` (113 passing). In browser: recommended route is visually prominent; numbers match API data exactly; comparative trade-off card shows extra time vs hazard avoided; skeletons render smoothly during calculation with zero layout shift.

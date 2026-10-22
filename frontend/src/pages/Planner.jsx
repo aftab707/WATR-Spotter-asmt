@@ -16,13 +16,16 @@ import PauseIcon from '@mui/icons-material/Pause';
 import MapIcon from '@mui/icons-material/Map';
 import LayersIcon from '@mui/icons-material/Layers';
 import RouteIcon from '@mui/icons-material/Route';
-import StarIcon from '@mui/icons-material/Star';
+import AltRouteIcon from '@mui/icons-material/AltRoute';
 import dayjs from 'dayjs';
 
 import AppHeader from '../components/AppHeader';
 import ShellLayout from '../components/ShellLayout';
 import RiskBadge from '../components/RiskBadge';
 import TripForm from '../components/TripForm';
+import RouteCard from '../components/RouteCard';
+import RouteComparison from '../components/RouteComparison';
+import RouteCardSkeleton from '../components/RouteCardSkeleton';
 import { getMockPlanFixture } from '../api/client';
 import { usePlanTrip } from '../api/queries';
 import {
@@ -36,6 +39,7 @@ export default function Planner() {
   const [selectedRouteId, setSelectedRouteId] = useState(
     () => plan.recommended_route_id || plan.routes[0]?.id
   );
+  const [hoveredRouteId, setHoveredRouteId] = useState(null);
   const [sliderHour, setSliderHour] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [serverError, setServerError] = useState(null);
@@ -54,14 +58,23 @@ export default function Planner() {
     }
   };
 
+  const activeRoute =
+    plan.routes.find((r) => r.id === (hoveredRouteId || selectedRouteId)) ||
+    plan.routes[0];
+
   const selectedRoute =
     plan.routes.find((r) => r.id === selectedRouteId) || plan.routes[0];
+
+  // Identify the fastest route candidate among all returned routes
+  const fastestRouteId = [...plan.routes].sort(
+    (a, b) => a.duration_minutes - b.duration_minutes
+  )[0]?.id;
 
   const departureDayjs = dayjs(plan.meta.departure_time);
   const currentSliderTime = departureDayjs.add(sliderHour, 'hour');
 
   // -------------------------------------------------------------------------
-  // Left Panel: Trip Form & Evaluated Route Cards
+  // Left Panel: Trip Form, Comparison View & Evaluated Route Cards
   // -------------------------------------------------------------------------
   const leftPanelContent = (
     <Box sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
@@ -79,142 +92,65 @@ export default function Planner() {
         </Alert>
       )}
 
+      {/* Trade-off Comparison: Recommended vs Fastest (Step 10) */}
+      {!planTripMutation.isPending && plan.routes.length > 0 && (
+        <RouteComparison routes={plan.routes} />
+      )}
+
       {/* Evaluated Route Alternatives List */}
       <Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
           <Typography
             variant="subtitle2"
-            sx={{ textTransform: 'uppercase', color: 'text.secondary', fontSize: '0.75rem', letterSpacing: 0.5 }}
+            sx={{
+              textTransform: 'uppercase',
+              color: 'text.secondary',
+              fontSize: '0.75rem',
+              letterSpacing: 0.5,
+              fontWeight: 700,
+            }}
           >
-            Evaluated Routes ({plan.routes.length})
+            Evaluated Route Alternatives ({plan.routes.length})
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Ranked by weather safety
           </Typography>
         </Stack>
 
-        <Stack spacing={2}>
-          {plan.routes.map((route) => {
-            const isSelected = route.id === selectedRouteId;
-            const isRec = route.is_recommended;
-
-            return (
-              <Paper
+        {planTripMutation.isPending ? (
+          <RouteCardSkeleton />
+        ) : plan.routes.length === 0 ? (
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 3,
+              textAlign: 'center',
+              bgcolor: 'background.paper',
+              borderRadius: 2,
+            }}
+          >
+            <AltRouteIcon sx={{ fontSize: 32, color: 'text.secondary', mb: 1 }} />
+            <Typography variant="subtitle2">No Routes Found</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Try adjusting your origin, destination, or departure time.
+            </Typography>
+          </Paper>
+        ) : (
+          <Stack spacing={2}>
+            {plan.routes.map((route) => (
+              <RouteCard
                 key={route.id}
-                onClick={() => setSelectedRouteId(route.id)}
-                sx={{
-                  p: 2,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  border: '1px solid',
-                  borderColor: isSelected
-                    ? 'primary.main'
-                    : isRec
-                      ? 'rgba(34, 197, 94, 0.4)'
-                      : 'rgba(255, 255, 255, 0.08)',
-                  bgcolor: isSelected ? 'rgba(56, 189, 248, 0.05)' : 'background.paper',
-                  '&:hover': {
-                    borderColor: isSelected ? 'primary.main' : 'rgba(255, 255, 255, 0.2)',
-                  },
-                }}
-              >
-                {/* Route Header */}
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography
-                      variant="subtitle1"
-                      sx={{ fontWeight: 700, color: isSelected ? 'primary.light' : 'text.primary' }}
-                    >
-                      {route.label}
-                    </Typography>
-                    <Chip
-                      label={`Rank #${route.rank}`}
-                      size="small"
-                      variant="outlined"
-                      sx={{ height: 20, fontSize: '0.7rem' }}
-                    />
-                  </Stack>
-
-                  {isRec && (
-                    <Chip
-                      icon={<StarIcon sx={{ fontSize: '14px !important', color: '#052e16 !important' }} />}
-                      label="Recommended"
-                      size="small"
-                      sx={{
-                        bgcolor: 'success.main',
-                        color: '#052e16',
-                        fontWeight: 700,
-                        fontSize: '0.72rem',
-                        height: 22,
-                      }}
-                    />
-                  )}
-                </Stack>
-
-                {/* Metrics Row */}
-                <Stack direction="row" spacing={2} sx={{ mb: 1.5, color: 'text.secondary' }}>
-                  <Typography variant="body2">
-                    <strong>{formatMiles(route.distance_miles)}</strong>
-                  </Typography>
-                  <Typography variant="body2">•</Typography>
-                  <Typography variant="body2">
-                    <strong>{formatDuration(route.duration_minutes)}</strong>
-                  </Typography>
-                  <Typography variant="body2">•</Typography>
-                  <Typography variant="caption" sx={{ alignSelf: 'center' }}>
-                    ETA: {dayjs(route.arrival_time).format('h:mm A')}
-                  </Typography>
-                </Stack>
-
-                {/* Risk Breakdown Chips */}
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }} flexWrap="wrap" useFlexGap>
-                  <RiskBadge level={route.summary.max_risk} size="small" />
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    Avg Risk: {route.summary.avg_risk.toFixed(2)}
-                  </Typography>
-                  {route.summary.severe_miles > 0 && (
-                    <Chip
-                      label={`${route.summary.severe_miles.toFixed(1)} mi Severe`}
-                      size="small"
-                      sx={{
-                        height: 20,
-                        fontSize: '0.6875rem',
-                        bgcolor: 'rgba(239, 68, 68, 0.15)',
-                        color: '#ef4444',
-                      }}
-                    />
-                  )}
-                  {route.summary.high_miles > 0 && (
-                    <Chip
-                      label={`${route.summary.high_miles.toFixed(1)} mi High`}
-                      size="small"
-                      sx={{
-                        height: 20,
-                        fontSize: '0.6875rem',
-                        bgcolor: 'rgba(249, 115, 22, 0.15)',
-                        color: '#f97316',
-                      }}
-                    />
-                  )}
-                </Stack>
-
-                {/* Recommendation Reason */}
-                <Box
-                  sx={{
-                    p: 1,
-                    borderRadius: 1,
-                    bgcolor: 'background.default',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                  }}
-                >
-                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontStyle: 'italic' }}>
-                    &ldquo;{route.recommendation_reason}&rdquo;
-                  </Typography>
-                </Box>
-              </Paper>
-            );
-          })}
-        </Stack>
+                route={route}
+                isSelected={route.id === selectedRouteId}
+                isHovered={route.id === hoveredRouteId}
+                isFastest={route.id === fastestRouteId}
+                onSelect={() => setSelectedRouteId(route.id)}
+                onMouseEnter={() => setHoveredRouteId(route.id)}
+                onMouseLeave={() => setHoveredRouteId(null)}
+              />
+            ))}
+          </Stack>
+        )}
       </Box>
     </Box>
   );
@@ -243,19 +179,33 @@ export default function Planner() {
             px: 2,
             py: 1,
             pointerEvents: 'auto',
-            bgcolor: 'rgba(17, 24, 39, 0.85)',
+            bgcolor: 'rgba(17, 24, 39, 0.88)',
             backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 2,
           }}
         >
           <Stack direction="row" spacing={1.5} alignItems="center">
-            <RouteIcon color="primary" sx={{ fontSize: 20 }} />
+            <RouteIcon color="primary" sx={{ fontSize: 22 }} />
             <Box>
-              <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary', display: 'block' }}>
-                Active: {selectedRoute?.label}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                {selectedRoute?.checkpoints?.length} sampled checkpoints • {selectedRoute?.geometry?.coordinates?.length} polyline vertices
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                  {activeRoute?.label}
+                </Typography>
+                {hoveredRouteId && hoveredRouteId !== selectedRouteId && (
+                  <Chip label="Hovered" size="small" sx={{ height: 16, fontSize: '0.625rem' }} />
+                )}
+                {activeRoute?.is_recommended && (
+                  <Chip
+                    label="Recommended"
+                    size="small"
+                    color="success"
+                    sx={{ height: 16, fontSize: '0.625rem', fontWeight: 700 }}
+                  />
+                )}
+              </Stack>
+              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                {activeRoute?.checkpoints?.length} sampled checkpoints • {activeRoute?.geometry?.coordinates?.length} polyline vertices
               </Typography>
             </Box>
           </Stack>
@@ -266,13 +216,21 @@ export default function Planner() {
             icon={<MapIcon sx={{ fontSize: 14 }} />}
             label="CARTO Dark Matter"
             size="small"
-            sx={{ bgcolor: 'rgba(17, 24, 39, 0.85)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)' }}
+            sx={{
+              bgcolor: 'rgba(17, 24, 39, 0.85)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
           />
           <Chip
             icon={<LayersIcon sx={{ fontSize: 14 }} />}
             label="Heatmap Ready"
             size="small"
-            sx={{ bgcolor: 'rgba(17, 24, 39, 0.85)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)' }}
+            sx={{
+              bgcolor: 'rgba(17, 24, 39, 0.85)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
           />
         </Stack>
       </Box>

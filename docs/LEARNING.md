@@ -83,6 +83,19 @@
   5. Submit par `usePlanTrip` mutation execute hoti hai; button disabled aur loading state mein chala jaata hai taake double-submission na ho sake.
 - **Interview mein kaise samjhaoge:** "Step 9 input layer ki defensive UX aur performance par focused hai. Maine custom `useDebounce` hook banaya taake geocoding autocomplete network I/O thrash na kare. Validation client-side aur server-side bilkul align hai: departure time 7-day weather window par bounded hai, aur load weight field mein domain rules visualize hote hain (e.g. >40k lb roll-over hazard). Evaluator UX ke liye 'Try example trip' feature diya hai jo standard Chicago to Denver corridor ko 1-click mein test ready bana deta hai."
 
+## Step 10 — Evaluated Route Cards, Trade-off Comparison & Loading Skeletons
+
+- **Kya banaya:** Humne `components/RouteCard.jsx`, `components/RouteComparison.jsx`, aur `components/RouteCardSkeleton.jsx` implement kiya. Isme evaluated route cards (distance, duration, arrival, Severe/High miles, average risk, risk chip, prominent "Recommended" badge, aur short "Why this route" callout box), fastest vs recommended trade-off analysis view, zero-layout-shift (CLS) skeleton loading states, empty/error fallbacks, aur map sync ke liye select/hover interactions diye.
+- **Kyun banaya:** Evaluators aur commercial dispatchers ko instant decision-making clarity chahiye hoti hai. Agar dispatcher ko yeh wazeh na ho ke Recommended route kyun behtar hai aur Fastest route lene se kitna hazard risk badhta hai, toh decision lena mushkil hota hai. Trade-off box clearly numbers samne rakhta hai (jaise: "+25 min vs fastest, 300.0 miles severe storm avoided").
+- **Kaise kaam karta hai:**
+  1. `RouteCard` API ke Section 5 response shape se direct bind karta hai. Recommended route ko bright green star badge aur green-accented border se highlight kiya jata hai taake evaluator ko pehli nazar mein safest choice nazar aaye.
+  2. Severe miles aur High miles ke pills warning colors aur icons ke sath render hote hain. Agar kisi route par No Travel condition ho toh clear red warning chip aati hai.
+  3. "Why this route" box backend ke dynamic reason generator ka comparative explanation show karta hai.
+  4. `RouteComparison` view fastest route aur recommended route ka comparison nikalta hai: extra travel time (+min), severe storm miles saved (-miles), aur average risk reduction.
+  5. API call ke dauran `RouteCardSkeleton` exact card dimensions ke placeholder render karta hai taake content load hote waqt screen jump (CLS) na kare.
+- **Interview mein kaise samjhaoge:** "Step 10 user-centric decision surfacing par mabni hai. Maine evaluators ke un pain points ko target kiya jahan doosre candidates fail hote hain: unke UI mein clear nahi hota ke recommended route kyun jeeta. Maine dedicated trade-off card banaya jo driver ko straightforward ROI dikhata hai: 25 minutes zyada chalne se 300 miles severe roll-over wind hazard se bachat hoti hai. Saath hi MUI Skeletons aur CSS layout preservation se zero cumulative layout shift (CLS) guarantee ki gayi hai."
+
+
 
 
 
