@@ -44,12 +44,21 @@
 - **Kaise kaam karta hai:** Agar routing provider se 3 se kam routes aate hain, toh routing engine Route 1 ke midpoint se perpendicular vector calculate karke offset waypoint banata hai aur uske through re-route karta hai. Agar naya route pehle se mojood route se >90% overlap karta hai toh discard ho jata hai warna add ho jata hai. Geocode endpoint query ko 24 hours ke liye cache karta hai aur max 6 clean results deta hai.
 - **Interview mein kaise samjhaoge:** "Step 5 mein maine Adapter Pattern use karke routing aur geocoding providers ko decoupled banaya. OSRM ki 2-route limitation ko solve karne ke liye maine midpoint perpendicular offset algorithm likha jo mathematical waypoint projection se legitimate 3rd alternative generate karta hai, aur point-proximity buffer se duplicate (>90% overlap) routes ko prune karta hai. Geocoding endpoint Photon aur Nominatim ke automatic fallback ke sath fail-safe banaya gaya hai."
 
-## Step 6 — Multi-Criteria Recommendation Engine & Reason Generation
+## Step 7 — `/api/plan/` Orchestrator, Validation, Throttling & Contract Testing
 
-- **Kya banaya:** Humne `backend/planner/logic/recommend.py` mein pure recommendation engine banaya jo route candidates ko safety preference order `(no_travel_miles, severe_miles, high_miles, avg_risk, duration_minutes)` par rank karta hai aur fastest route ke muqable comparative reasons generate karta hai.
-- **Kyun banaya:** Truck dispatcher ya driver ke liye sirf number dekhna kafi nahi hota, usay clear decision-making guidance chahiye hoti hai ke konsa rasta safest hai aur kyun (maslan: 25 minutes zyada lag rahe hain lekin 40 miles severe storm se bach rahe hain).
-- **Kaise kaam karta hai:** Engine lexicographical tuple comparison use karta hai jahan No Travel aur Severe storm miles sabse pehle consider hote hain (bhale route slower ho). Agar koi route No Travel face kare toh woh unrecommended flag ho jata hai. Fastest route se compare karke dynamic, human-readable reason string banayi jaati hai (jaise `"+25 min vs fastest, 40.0 fewer Severe miles"`).
-- **Interview mein kaise samjhaoge:** "Recommendation engine 100% pure function hai jo deterministic 5-level tie-breaking implement karta hai. Maine floating-point noise khatam karne ke liye distances ko 0.1 miles aur average risk ko 0.01 par round kiya hai. Engine safety-first principle follow karta hai: Severe storm miles hamesha travel time par jeet te hain, jabke No Travel routes ko strictly recommend hone se block kiya jata hai aur all-hazard scenarios mein proper system warning trigger hoti hai."
+- **Kya banaya:** Humne `backend/planner/serializers.py` mein complete request validation aur Section 5 response schemas implement kiye, `backend/planner/services/orchestrator.py` mein central `plan_trip` workflow banaya jo routing, geometry sampling, monotonic ETAs, batch weather, load rules, summaries, recommendations aur 0–48h heatmap matrix ko integrate karta hai, `views.py` mein `POST /api/plan/` endpoint banaya (with 30/min throttling, 422 validation, 502 upstream errors, 504 timeouts), contract tests likhe, aur `frontend/src/api/fixtures/plan.json` export kiya.
+- **Kyun banaya:** Sab pure math modules aur external services alag alag the. Ab application ko ek single, robust, production-ready endpoint chahiye tha jo frontend ko complete Section 5 contract shape de, invalid input par clear field errors (422) return kare, external network failures par friendly JSON (502/504) return kare, aur kabhi stack trace ya HTML leak na kare.
+- **Kaise kaam karta hai:**
+  1. Serializer request validate karta hai: origin/destination coordinates, departure time `[now - 1h, now + 7 days]`, aur load weight `1–120,000 lb`.
+  2. Router se <= 3 routes aate hain; har route ki display geometry RDP se <= 2000 points mein simplify hoti hai.
+  3. Checkpoints 10/25/50 miles par sample hote hain, unke monotonic ETAs aur midpoint segment miles calculate hote hain.
+  4. Sab routes ke checkpoints ke coordinates ko 2 decimals par deduplicate karke Open-Meteo se single batch mein parallel fetch kiya jaata hai.
+  5. Har checkpoint par truck ke ETA time ke weather aur load rules ke mutabiq risk classify hota hai, segment miles aggregate karke summaries banti hain.
+  6. Recommendation engine 5-tier key se ranking karta hai aur comparative reason generate karta hai.
+  7. Saath hi corridor ke har point ke liye 0 se 48 hours post-departure ka hourly weather le kar 49-element risk array banta hai (heatmap slider ke liye).
+  8. Output Section 5 JSON format mein return hota hai.
+- **Interview mein kaise samjhaoge:** "Step 7 backend ka capstone orchestrator hai. Maine Decorator aur Facade patterns use kiye hain taake views thin rahen aur business logic `orchestrator.py` mein encapsulated ho. Performance ke liye sab routes ke checkpoints ko deduplicate karke single batched weather call bheji jaati hai jo network round-trips ko 3x reduce karti hai. Humne DRF throttling (30 req/min), strict 422/502/504 error mappings, aur automated contract verification ensure ki hai jo exported fixture `plan.json` se frontend mock mode ko feed karti hai."
+
 
 
 

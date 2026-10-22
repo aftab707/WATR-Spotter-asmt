@@ -121,6 +121,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_THROTTLE_RATES": {
         "anon": "60/min",
+        "plan": "30/min",
     },
     "UNAUTHENTICATED_USER": None,
 }
