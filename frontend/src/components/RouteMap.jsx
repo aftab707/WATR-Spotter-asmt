@@ -232,7 +232,12 @@ export default function RouteMap({
     const features = event.features || [];
 
     // 1. Checkpoint circle clicked (Truck ETA)
-    const checkpointFeature = features.find((f) => f.layer.id === 'checkpoint-markers-layer');
+    const checkpointFeature = features.find(
+      (f) =>
+        f.layer.id === 'checkpoint-markers-layer' ||
+        f.layer.id === 'checkpoint-hitbox-layer' ||
+        f.layer.id === 'checkpoint-halo-layer'
+    );
     if (checkpointFeature) {
       const [lon, lat] = checkpointFeature.geometry.coordinates;
       setSelectedCheckpoint({
@@ -245,7 +250,11 @@ export default function RouteMap({
     }
 
     // 2. Area forecast point clicked (Heatmap corridor point at sliderHour)
-    const areaPointFeature = features.find((f) => f.layer.id === 'corridor-slider-points-layer');
+    const areaPointFeature = features.find(
+      (f) =>
+        f.layer.id === 'corridor-slider-points-layer' ||
+        f.layer.id === 'corridor-slider-hitbox-layer'
+    );
     if (areaPointFeature) {
       const [lon, lat] = areaPointFeature.geometry.coordinates;
       setSelectedAreaPoint({
@@ -293,7 +302,10 @@ export default function RouteMap({
         interactiveLayerIds={[
           'route-lines-layer',
           'checkpoint-markers-layer',
+          'checkpoint-hitbox-layer',
+          'checkpoint-halo-layer',
           'corridor-slider-points-layer',
+          'corridor-slider-hitbox-layer',
         ]}
         cursor="pointer"
         attributionControl={false}
@@ -382,6 +394,16 @@ export default function RouteMap({
                 'circle-stroke-opacity': 0.5,
               }}
             />
+
+            {/* Transparent Hitbox Layer for easy clicking of area forecast points */}
+            <Layer
+              id="corridor-slider-hitbox-layer"
+              type="circle"
+              paint={{
+                'circle-radius': 14,
+                'circle-opacity': 0,
+              }}
+            />
           </Source>
         )}
 
@@ -439,6 +461,16 @@ export default function RouteMap({
               'circle-stroke-width': 1.5,
               'circle-stroke-color': '#ffffff',
               'circle-stroke-opacity': 0.9,
+            }}
+          />
+
+          {/* Transparent Hitbox Layer for effortless, high-accuracy clicking */}
+          <Layer
+            id="checkpoint-hitbox-layer"
+            type="circle"
+            paint={{
+              'circle-radius': 16,
+              'circle-opacity': 0,
             }}
           />
         </Source>
@@ -678,8 +710,8 @@ export default function RouteMap({
         <Paper
           sx={{
             position: 'absolute',
-            bottom: { xs: 8, sm: 12 },
-            left: { xs: 8, sm: 12 },
+            bottom: { xs: 85, sm: 100, md: 110 },
+            left: { xs: 8, sm: 14 },
             p: 1.25,
             bgcolor: 'rgba(17, 24, 39, 0.94)',
             backdropFilter: 'blur(8px)',
@@ -687,7 +719,7 @@ export default function RouteMap({
             borderRadius: 1.5,
             zIndex: 10,
             width: { xs: 190, sm: 220 },
-            maxHeight: 'calc(100% - 24px)',
+            maxHeight: 'calc(100% - 130px)',
             overflowY: 'auto',
             boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
           }}
