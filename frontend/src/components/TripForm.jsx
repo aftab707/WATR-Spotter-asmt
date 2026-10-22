@@ -33,7 +33,13 @@ const LOAD_PRESETS = [
   { label: '80k lb (Max Standard)', value: 80000 },
 ];
 
-export default function TripForm({ onSubmit, isSubmitting = false, serverError = null }) {
+export default function TripForm({
+  onSubmit,
+  isSubmitting = false,
+  serverError = null,
+  hasRoutes = false,
+}) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [origin, setOrigin] = useState({
     label: 'Chicago, IL, USA',
     lat: 41.8781,
@@ -122,7 +128,43 @@ export default function TripForm({ onSubmit, isSubmitting = false, serverError =
       load_weight_lb: Number(loadWeight),
       sampling_interval_miles: Number(samplingInterval),
     });
+    if (hasRoutes) {
+      setIsCollapsed(true);
+    }
   };
+
+  if (isCollapsed) {
+    return (
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 1.5,
+          borderRadius: 2,
+          bgcolor: 'background.paper',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+        }}
+      >
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Box sx={{ overflow: 'hidden', mr: 1 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.8125rem' }} noWrap>
+              📍 {origin?.label?.split(',')[0] || 'Origin'} → {destination?.label?.split(',')[0] || 'Destination'}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6875rem' }} noWrap display="block">
+              {Number(loadWeight).toLocaleString()} lb • {samplingInterval} mi • {departureTime?.format('MMM D, h:mm A')}
+            </Typography>
+          </Box>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => setIsCollapsed(false)}
+            sx={{ fontSize: '0.75rem', py: 0.35, px: 1.25, height: 28, flexShrink: 0 }}
+          >
+            Edit Trip
+          </Button>
+        </Stack>
+      </Paper>
+    );
+  }
 
   return (
     <Paper
@@ -144,26 +186,39 @@ export default function TripForm({ onSubmit, isSubmitting = false, serverError =
           Plan Route
         </Typography>
 
-        <Button
-          size="small"
-          variant="outlined"
-          color="secondary"
-          startIcon={<AutoAwesomeIcon sx={{ fontSize: 16 }} />}
-          onClick={handleTryExampleTrip}
-          disabled={isSubmitting}
-          sx={{
-            py: 0.5,
-            px: 1.25,
-            fontSize: '0.75rem',
-            borderColor: 'rgba(129, 140, 248, 0.4)',
-            '&:hover': {
-              borderColor: 'secondary.main',
-              bgcolor: 'rgba(129, 140, 248, 0.08)',
-            },
-          }}
-        >
-          Try example trip
-        </Button>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Button
+            size="small"
+            variant="outlined"
+            color="secondary"
+            startIcon={<AutoAwesomeIcon sx={{ fontSize: 16 }} />}
+            onClick={handleTryExampleTrip}
+            disabled={isSubmitting}
+            sx={{
+              py: 0.5,
+              px: 1.25,
+              fontSize: '0.75rem',
+              borderColor: 'rgba(129, 140, 248, 0.4)',
+              '&:hover': {
+                borderColor: 'secondary.main',
+                bgcolor: 'rgba(129, 140, 248, 0.08)',
+              },
+            }}
+          >
+            Try example trip
+          </Button>
+
+          {hasRoutes && (
+            <Button
+              size="small"
+              variant="text"
+              onClick={() => setIsCollapsed(true)}
+              sx={{ fontSize: '0.75rem', py: 0.5, color: 'text.secondary' }}
+            >
+              Hide
+            </Button>
+          )}
+        </Stack>
       </Stack>
 
       {/* Server Error Banner */}
@@ -389,4 +444,5 @@ TripForm.propTypes = {
   onSubmit: PropTypes.func.isRequired,
   isSubmitting: PropTypes.bool,
   serverError: PropTypes.string,
+  hasRoutes: PropTypes.bool,
 };

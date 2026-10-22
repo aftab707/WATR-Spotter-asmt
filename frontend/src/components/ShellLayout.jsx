@@ -16,7 +16,8 @@ export default function ShellLayout({
   header,
   leftPanel,
   mapArea,
-  bottomPanel,
+  mainArea,
+  bottomPanel = null,
   mobileTab: controlledMobileTab,
   onMobileTabChange,
 }) {
@@ -33,6 +34,8 @@ export default function ShellLayout({
       onMobileTabChange(val);
     }
   };
+
+  const centerContent = mainArea || mapArea;
 
   return (
     <Box
@@ -129,16 +132,16 @@ export default function ShellLayout({
           {leftPanel}
         </Box>
 
-        {/* Center Canvas / Map Area & Bottom Drawer */}
+        {/* Center Canvas / Workspace Area */}
         <Box
           component="main"
-          id="mobile-panel-map"
+          id="mobile-panel-main"
           role="region"
           aria-labelledby="mobile-tab-map"
           sx={{
             flex: 1,
             display: {
-              xs: activeTab === 'map' ? 'flex' : 'none',
+              xs: activeTab !== 'controls' ? 'flex' : 'none',
               md: 'flex',
             },
             flexDirection: 'column',
@@ -147,7 +150,7 @@ export default function ShellLayout({
             bgcolor: '#070a13',
           }}
         >
-          {/* Map Canvas Area */}
+          {/* Main Area */}
           <Box
             sx={{
               flex: 1,
@@ -157,10 +160,10 @@ export default function ShellLayout({
               flexDirection: 'column',
             }}
           >
-            {mapArea}
+            {centerContent}
           </Box>
 
-          {/* Bottom Panel (Heatmap slider / Checkpoints) */}
+          {/* Optional Bottom Panel if explicitly provided */}
           {bottomPanel && (
             <Box
               component="section"
@@ -183,7 +186,8 @@ export default function ShellLayout({
 ShellLayout.propTypes = {
   header: PropTypes.node.isRequired,
   leftPanel: PropTypes.node.isRequired,
-  mapArea: PropTypes.node.isRequired,
+  mapArea: PropTypes.node,
+  mainArea: PropTypes.node,
   bottomPanel: PropTypes.node,
   mobileTab: PropTypes.string,
   onMobileTabChange: PropTypes.func,

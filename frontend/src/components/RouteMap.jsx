@@ -678,16 +678,18 @@ export default function RouteMap({
         <Paper
           sx={{
             position: 'absolute',
-            bottom: 24,
-            left: 20,
-            p: 1.75,
-            bgcolor: 'rgba(17, 24, 39, 0.92)',
+            bottom: { xs: 8, sm: 12 },
+            left: { xs: 8, sm: 12 },
+            p: 1.25,
+            bgcolor: 'rgba(17, 24, 39, 0.94)',
             backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255,255,255,0.14)',
-            borderRadius: 2,
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 1.5,
             zIndex: 10,
-            minWidth: 230,
-            maxWidth: 290,
+            width: { xs: 190, sm: 220 },
+            maxHeight: 'calc(100% - 24px)',
+            overflowY: 'auto',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
           }}
         >
           {/* Header */}
@@ -699,7 +701,8 @@ export default function RouteMap({
               letterSpacing: 0.5,
               color: 'text.secondary',
               display: 'block',
-              mb: 1,
+              fontSize: '0.625rem',
+              mb: 0.75,
             }}
           >
             Map Legend &amp; Distinction
@@ -712,14 +715,14 @@ export default function RouteMap({
               fontWeight: 600,
               color: 'text.primary',
               display: 'block',
-              fontSize: '0.6875rem',
-              mb: 0.5,
+              fontSize: '0.65rem',
+              mb: 0.4,
             }}
           >
             Route Lines
           </Typography>
 
-          <Stack spacing={0.65} sx={{ mb: 1.5 }}>
+          <Stack spacing={0.4} sx={{ mb: 1 }}>
             {routes.map((r) => {
               const isSelected = r.id === selectedRouteId;
               const color = ROUTE_LINE_COLORS[r.id] || DEFAULT_ROUTE_COLOR;
@@ -728,28 +731,28 @@ export default function RouteMap({
                 <Stack
                   key={r.id}
                   direction="row"
-                  spacing={1}
+                  spacing={0.75}
                   alignItems="center"
                   onClick={() => onSelectRoute && onSelectRoute(r.id)}
                   sx={{
                     cursor: 'pointer',
-                    opacity: isSelected ? 1 : 0.65,
+                    opacity: isSelected ? 1 : 0.7,
                     '&:hover': { opacity: 1 },
                   }}
                 >
                   <Box
                     sx={{
-                      width: 18,
-                      height: isSelected ? 4 : 2.5,
+                      width: 14,
+                      height: isSelected ? 3.5 : 2,
                       bgcolor: color,
                       borderRadius: 1,
                     }}
                   />
-                  <Typography variant="caption" sx={{ fontWeight: isSelected ? 700 : 500 }} noWrap>
+                  <Typography variant="caption" sx={{ fontWeight: isSelected ? 700 : 500, fontSize: '0.65rem' }} noWrap>
                     {r.label}
                   </Typography>
                   {r.is_recommended && (
-                    <Chip label="Rec" size="small" color="success" sx={{ height: 16, fontSize: '0.625rem', px: 0.5 }} />
+                    <Chip label="Rec" size="small" color="success" sx={{ height: 14, fontSize: '0.575rem', px: 0.4, '& .MuiChip-label': { px: 0.5 } }} />
                   )}
                 </Stack>
               );
@@ -759,23 +762,23 @@ export default function RouteMap({
           {/* Distinction: Area Heatmap vs Checkpoints */}
           <Box
             sx={{
-              p: 1,
+              p: 0.75,
               borderRadius: 1,
               bgcolor: 'background.default',
               border: '1px solid rgba(255,255,255,0.06)',
-              mb: 1.5,
+              mb: 1,
             }}
           >
-            <Stack spacing={0.5}>
-              <Stack direction="row" spacing={0.75} alignItems="center">
-                <Box sx={{ width: 8, height: 8, borderRadius: '50%', border: '2px solid #38bdf8' }} />
-                <Typography variant="caption" sx={{ fontSize: '0.6875rem', color: 'primary.light' }}>
-                  <strong>Heatmap:</strong> Area forecast at +{sliderHour}h
+            <Stack spacing={0.35}>
+              <Stack direction="row" spacing={0.65} alignItems="center">
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', border: '1.5px solid #38bdf8', flexShrink: 0 }} />
+                <Typography variant="caption" sx={{ fontSize: '0.625rem', color: 'primary.light', lineHeight: 1.2 }}>
+                  <strong>Heatmap:</strong> Area forecast (+{sliderHour}h)
                 </Typography>
               </Stack>
-              <Stack direction="row" spacing={0.75} alignItems="center">
-                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#22c55e' }} />
-                <Typography variant="caption" sx={{ fontSize: '0.6875rem', color: 'text.secondary' }}>
+              <Stack direction="row" spacing={0.65} alignItems="center">
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#22c55e', flexShrink: 0 }} />
+                <Typography variant="caption" sx={{ fontSize: '0.625rem', color: 'text.secondary', lineHeight: 1.2 }}>
                   <strong>Checkpoints:</strong> Weather at truck ETA
                 </Typography>
               </Stack>
@@ -789,8 +792,8 @@ export default function RouteMap({
               fontWeight: 600,
               color: 'text.primary',
               display: 'block',
-              fontSize: '0.6875rem',
-              mb: 0.5,
+              fontSize: '0.65rem',
+              mb: 0.4,
             }}
           >
             Risk Tiers
@@ -798,9 +801,9 @@ export default function RouteMap({
 
           <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
             {Object.values(RISK_CONFIG).map((cfg) => (
-              <Stack key={cfg.key} direction="row" spacing={0.5} alignItems="center" sx={{ mr: 0.75, mb: 0.5 }}>
-                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: cfg.color }} />
-                <Typography variant="caption" sx={{ fontSize: '0.6875rem', color: 'text.secondary' }}>
+              <Stack key={cfg.key} direction="row" spacing={0.4} alignItems="center" sx={{ mr: 0.5, mb: 0.35 }}>
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: cfg.color, flexShrink: 0 }} />
+                <Typography variant="caption" sx={{ fontSize: '0.625rem', color: 'text.secondary' }}>
                   {cfg.label}
                 </Typography>
               </Stack>

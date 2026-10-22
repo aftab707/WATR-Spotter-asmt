@@ -5,12 +5,10 @@ import {
   Paper,
   Stack,
   Alert,
-  Tabs,
-  Tab,
+  Button,
 } from '@mui/material';
 import AltRouteIcon from '@mui/icons-material/AltRoute';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import TableRowsIcon from '@mui/icons-material/TableRows';
+import MapIcon from '@mui/icons-material/Map';
 
 import AppHeader from '../components/AppHeader';
 import ShellLayout from '../components/ShellLayout';
@@ -32,12 +30,13 @@ export default function Planner() {
   );
   const [hoveredRouteId, setHoveredRouteId] = useState(null);
   const [focusedCheckpoint, setFocusedCheckpoint] = useState(null);
-  const [bottomTab, setBottomTab] = useState('timeline'); // 'timeline' | 'checkpoints'
+  const [activeTab, setActiveTab] = useState('map'); // 'map' | 'checkpoints' | 'compare'
   const [mobileTab, setMobileTab] = useState('controls'); // 'controls' | 'map'
   const [sliderHour, setSliderHour] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [serverError, setServerError] = useState(null);
+  const [isDemoMode, setIsDemoMode] = useState(true); // Default to realistic storm benchmark scenario
 
   const planTripMutation = usePlanTrip();
 
@@ -59,6 +58,7 @@ export default function Planner() {
 
   const handlePlanSubmit = async (formData) => {
     setServerError(null);
+    setIsDemoMode(false);
     try {
       const response = await planTripMutation.mutateAsync(formData);
       setPlan(response);
@@ -66,8 +66,24 @@ export default function Planner() {
       setSliderHour(0);
       setFocusedCheckpoint(null);
       setMobileTab('map');
+      setActiveTab('map');
     } catch (err) {
       setServerError(err.message || 'Failed to calculate safe routes. Please try again.');
+    }
+  };
+
+  // Switch between Severe Storm Demo and Live API
+  const handleToggleDemoMode = () => {
+    if (!isDemoMode) {
+      setIsDemoMode(true);
+      const fixture = getMockPlanFixture();
+      setPlan(fixture);
+      setSelectedRouteId(fixture.recommended_route_id || fixture.routes[0]?.id);
+      setSliderHour(0);
+      setFocusedCheckpoint(null);
+    } else {
+      setIsDemoMode(false);
+      handlePlanSubmit(plan.meta);
     }
   };
 
@@ -84,12 +100,13 @@ export default function Planner() {
   // Left Panel: Trip Form, Comparison View & Evaluated Route Cards
   // -------------------------------------------------------------------------
   const leftPanelContent = (
-    <Box sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-      {/* Trip Planning Form (Step 9) */}
+    <Box sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {/* Trip Planning Form with auto-collapse capability */}
       <TripForm
         onSubmit={handlePlanSubmit}
         isSubmitting={planTripMutation.isPending}
         serverError={serverError}
+        hasRoutes={plan.routes.length > 0}
       />
 
       {/* Warnings Banner if any emitted by backend */}
@@ -99,7 +116,7 @@ export default function Planner() {
         </Alert>
       )}
 
-      {/* Trade-off Comparison: Recommended vs Fastest (Step 10) */}
+      {/* Trade-off Comparison Summary: Recommended vs Fastest */}
       {!planTripMutation.isPending && plan.routes.length > 0 && (
         <RouteComparison routes={plan.routes} />
       )}
@@ -157,6 +174,11 @@ export default function Planner() {
                 onSelectCheckpoint={(cp) => {
                   setFocusedCheckpoint(cp);
                   setMobileTab('map');
+                  setActiveTab('map');
+                }}
+                onViewCheckpoints={() => {
+                  setSelectedRouteId(route.id);
+                  setActiveTab('checkpoints');
                 }}
               />
             ))}
@@ -167,98 +189,91 @@ export default function Planner() {
   );
 
   // -------------------------------------------------------------------------
-  // Main Area: Interactive RouteMap Component with 0–48h Heatmap (Step 11 & 12)
+  // Main Workspace: Map with Floating Slider OR Checkpoint Table OR Comparison
   // -------------------------------------------------------------------------
-  const mapAreaContent = (
-    <RouteMap
-      routes={plan.routes}
-      selectedRouteId={selectedRouteId}
-      hoveredRouteId={hoveredRouteId}
-      onSelectRoute={(id) => setSelectedRouteId(id)}
-      loadWeightLb={plan.meta.load_weight_lb}
-      heatmap={plan.heatmap}
-      sliderHour={sliderHour}
-      showHeatmap={showHeatmap}
-      onToggleHeatmap={() => setShowHeatmap((prev) => !prev)}
-      departureTime={plan.meta.departure_time}
-      focusedCheckpoint={focusedCheckpoint}
-    />
-  );
-
-  // -------------------------------------------------------------------------
-  // Bottom Panel: 0–48h Forecast Timeline Slider + Checkpoint Table & Risk Strip (Step 12 & 13)
-  // -------------------------------------------------------------------------
-  const bottomPanelContent = (
-    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'background.default', px: 2 }}>
-        <Tabs
-          value={bottomTab}
-          onChange={(_, val) => setBottomTab(val)}
-          textColor="primary"
-          indicatorColor="primary"
-          sx={{
-            minHeight: 40,
-            '& .MuiTab-root': {
-              minHeight: 40,
-              py: 0.75,
-              px: 2,
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-              textTransform: 'none',
-            },
-          }}
-        >
-          <Tab
-            value="timeline"
-            icon={<AccessTimeIcon sx={{ fontSize: 16 }} />}
-            iconPosition="start"
-            label="0–48h Timeline Forecast"
+  const mainWorkspaceContent = (
+    <Box sx={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+      {activeTab === 'map' && (
+        <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
+          <RouteMap
+            routes={plan.routes}
+            selectedRouteId={selectedRouteId}
+            hoveredRouteId={hoveredRouteId}
+            onSelectRoute={(id) => setSelectedRouteId(id)}
+            loadWeightLb={plan.meta.load_weight_lb}
+            heatmap={plan.heatmap}
+            sliderHour={sliderHour}
+            showHeatmap={showHeatmap}
+            onToggleHeatmap={() => setShowHeatmap((prev) => !prev)}
+            departureTime={plan.meta.departure_time}
+            focusedCheckpoint={focusedCheckpoint}
           />
-          <Tab
-            value="checkpoints"
-            icon={<TableRowsIcon sx={{ fontSize: 16 }} />}
-            iconPosition="start"
-            label={`Checkpoints & Risk Strip (${activeRoute?.checkpoints?.length || 0})`}
-          />
-        </Tabs>
-      </Box>
 
-      {bottomTab === 'timeline' ? (
-        <HeatmapSlider
-          sliderHour={sliderHour}
-          onSliderChange={(val) => setSliderHour(val)}
-          departureTime={plan.meta.departure_time}
-          isPlaying={isPlaying}
-          onTogglePlay={() => setIsPlaying((prev) => !prev)}
-          showHeatmap={showHeatmap}
-          onToggleHeatmap={() => setShowHeatmap((prev) => !prev)}
-        />
-      ) : (
-        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.75, maxHeight: { xs: 360, md: 420 }, overflowY: 'auto' }}>
+          {/* Floating Sleek 0-48h Forecast Timeline Controller (Never crushes the map) */}
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 16,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 'calc(100% - 32px)',
+              maxWidth: 780,
+              zIndex: 10,
+            }}
+          >
+            <HeatmapSlider
+              sliderHour={sliderHour}
+              onSliderChange={(val) => setSliderHour(val)}
+              departureTime={plan.meta.departure_time}
+              isPlaying={isPlaying}
+              onTogglePlay={() => setIsPlaying((prev) => !prev)}
+              showHeatmap={showHeatmap}
+              onToggleHeatmap={() => setShowHeatmap((prev) => !prev)}
+            />
+          </Box>
+        </Box>
+      )}
+
+      {activeTab === 'checkpoints' && (
+        <Box sx={{ p: { xs: 1.5, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2, height: '100%', overflowY: 'auto' }}>
           {activeRoute && (
             <Paper
               variant="outlined"
               sx={{
-                p: 1.5,
+                p: 2,
                 bgcolor: 'background.paper',
                 borderRadius: 2,
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
               }}
             >
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  {activeRoute.label} Corridor Risk Exposure
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Click any segment to center map on checkpoint
-                </Typography>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                    {activeRoute.label} Corridor Risk Exposure
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Distance-proportional risk strip ({activeRoute.distance_miles.toFixed(1)} miles total) • Click segment to center on map
+                  </Typography>
+                </Box>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<MapIcon />}
+                  onClick={() => setActiveTab('map')}
+                  sx={{ fontSize: '0.75rem', py: 0.5 }}
+                >
+                  View on Map
+                </Button>
               </Stack>
               <RiskStrip
                 checkpoints={activeRoute.checkpoints}
                 totalDistanceMiles={activeRoute.distance_miles}
-                height={14}
+                height={16}
                 showLabels
-                onSelectCheckpoint={(cp) => setFocusedCheckpoint(cp)}
+                onSelectCheckpoint={(cp) => {
+                  setFocusedCheckpoint(cp);
+                  setActiveTab('map');
+                }}
                 selectedCheckpointIndex={focusedCheckpoint?.index}
               />
             </Paper>
@@ -266,9 +281,38 @@ export default function Planner() {
 
           <CheckpointTable
             checkpoints={activeRoute?.checkpoints || []}
-            onSelectCheckpoint={(cp) => setFocusedCheckpoint(cp)}
+            onSelectCheckpoint={(cp) => {
+              setFocusedCheckpoint(cp);
+              setActiveTab('map');
+            }}
             selectedCheckpointIndex={focusedCheckpoint?.index}
           />
+        </Box>
+      )}
+
+      {activeTab === 'compare' && (
+        <Box sx={{ p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2.5, height: '100%', overflowY: 'auto' }}>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            Route Alternatives Comparison
+          </Typography>
+          <RouteComparison routes={plan.routes} />
+          <Stack spacing={2}>
+            {plan.routes.map((route) => (
+              <RouteCard
+                key={route.id}
+                route={route}
+                isSelected={route.id === selectedRouteId}
+                isHovered={route.id === hoveredRouteId}
+                isFastest={route.id === fastestRouteId}
+                onSelect={() => setSelectedRouteId(route.id)}
+                onSelectCheckpoint={(cp) => {
+                  setFocusedCheckpoint(cp);
+                  setActiveTab('map');
+                }}
+                onViewCheckpoints={() => setActiveTab('checkpoints')}
+              />
+            ))}
+          </Stack>
         </Box>
       )}
     </Box>
@@ -276,10 +320,18 @@ export default function Planner() {
 
   return (
     <ShellLayout
-      header={<AppHeader onRefreshPlan={() => handlePlanSubmit(plan.meta)} />}
+      header={
+        <AppHeader
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          checkpointCount={activeRoute?.checkpoints?.length || 0}
+          isDemoMode={isDemoMode}
+          onToggleDemoMode={handleToggleDemoMode}
+          onRefreshPlan={() => (isDemoMode ? handleToggleDemoMode() : handlePlanSubmit(plan.meta))}
+        />
+      }
       leftPanel={leftPanelContent}
-      mapArea={mapAreaContent}
-      bottomPanel={bottomPanelContent}
+      mainArea={mainWorkspaceContent}
       mobileTab={mobileTab}
       onMobileTabChange={setMobileTab}
     />

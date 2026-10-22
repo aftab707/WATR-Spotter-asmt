@@ -14,3 +14,31 @@ body,
   color: #e2e8f0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
+
+/* MapLibre Dark Theme Popup Overrides (removes default white box) */
+.maplibregl-popup-content {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: rgba(17, 24, 39, 0.96) !important;
+  border-bottom-color: rgba(17, 24, 39, 0.96) !important;
+}
+
+.maplibregl-popup-close-button {
+  color: #94a3b8 !important;
+  font-size: 16px !important;
+  padding: 4px 8px !important;
+  right: 4px !important;
+  top: 4px !important;
+  z-index: 12 !important;
+}
+
+.maplibregl-popup-close-button:hover {
+  color: #f1f5f9 !important;
+  background-color: transparent !important;
+}
+

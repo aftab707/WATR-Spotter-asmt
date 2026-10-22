@@ -8,7 +8,7 @@ import {
   IconButton,
   Tooltip,
   Divider,
-  Button,
+  Chip,
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
@@ -17,34 +17,22 @@ import FastForwardIcon from '@mui/icons-material/FastForward';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import LayersIcon from '@mui/icons-material/Layers';
 import LayersClearIcon from '@mui/icons-material/LayersClear';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import dayjs from 'dayjs';
-
-import RiskBadge from './RiskBadge';
-import { RISK_CONFIG } from '../lib/risk';
 
 const SLIDER_MARKS = [
   { value: 0, label: '0h' },
-  { value: 6, label: '+6h' },
   { value: 12, label: '+12h' },
-  { value: 18, label: '+18h' },
   { value: 24, label: '+24h' },
-  { value: 30, label: '+30h' },
   { value: 36, label: '+36h' },
-  { value: 42, label: '+42h' },
   { value: 48, label: '+48h' },
 ];
 
 /**
- * 0–48h Forecast Timeline Slider & Playback Controller.
+ * Modern Sleek Floating Forecast Timeline Controller.
  *
- * Per Step 12 & PROJECT_SPEC.md:
- * - Slider range: 0 to 48 hours post-departure with marks every 6 hours.
- * - Displays clock time (departure + h) in local user timezone.
- * - Play / Pause automated timeline playback.
- * - Throttles updates via requestAnimationFrame for 60fps responsiveness.
- * - 100% computed client-side from the pre-loaded series — zero network requests.
- * - Explicitly labels: "Area forecast at this time" vs "Weather at your ETA".
+ * Designed as a compact, floating glass pill overlaying the bottom of the map.
+ * Takes minimal vertical footprint while delivering 60fps throttled scrubbing.
  */
 export default function HeatmapSlider({
   sliderHour,
@@ -57,138 +45,142 @@ export default function HeatmapSlider({
 }) {
   const rafRef = useRef(null);
 
-  // Throttled slider change using requestAnimationFrame for zero-jank dragging
   const handleSliderChange = useCallback(
     (_, val) => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
+      if (typeof val !== 'number') return;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => {
-        onSliderChange(Number(val));
+        onSliderChange(val);
       });
     },
     [onSliderChange]
   );
 
-  // Clean up RAF on unmount
   useEffect(() => {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
 
-  const departureDayjs = dayjs(departureTime);
-  const currentSliderTime = departureDayjs.add(sliderHour, 'hour');
-
-  // Format timezone abbreviation
-  const tzAbbr =
-    new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
-      .formatToParts(currentSliderTime.toDate())
-      .find((p) => p.type === 'timeZoneName')?.value || '';
-
-  const formattedClockTime = `${currentSliderTime.format('ddd, MMM D • h:00 A')} ${tzAbbr}`;
+  const baseDate = departureTime ? dayjs(departureTime) : dayjs();
+  const currentTimelineDate = baseDate.add(sliderHour, 'hour');
+  const formattedClock = currentTimelineDate.isValid()
+    ? currentTimelineDate.format('MMM D, h:mm A')
+    : `+${sliderHour}h`;
 
   return (
-    <Box sx={{ p: 2, px: { xs: 2, md: 3 } }}>
-      <Stack
-        direction={{ xs: 'column', lg: 'row' }}
-        spacing={2.5}
-        alignItems={{ xs: 'stretch', lg: 'center' }}
-      >
-        {/* Playback Controls & Timeline Clock */}
-        <Stack
-          direction="row"
-          spacing={1.5}
-          alignItems="center"
-          sx={{ minWidth: { lg: 340 } }}
-        >
-          {/* Play/Pause Button */}
-          <Tooltip title={isPlaying ? 'Pause timeline animation' : 'Play 48-hour forecast timeline'}>
-            <IconButton
-              color="primary"
-              onClick={onTogglePlay}
-              sx={{
-                border: '1.5px solid',
-                borderColor: 'primary.main',
-                p: 1.1,
-                bgcolor: isPlaying ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(56, 189, 248, 0.25)' },
-              }}
-            >
-              {isPlaying ? <PauseIcon sx={{ fontSize: 20 }} /> : <PlayArrowIcon sx={{ fontSize: 20 }} />}
-            </IconButton>
+    <Box
+      sx={{
+        px: { xs: 1.5, sm: 2 },
+        py: 1,
+        bgcolor: 'rgba(15, 23, 42, 0.92)',
+        backdropFilter: 'blur(16px)',
+        border: '1px solid rgba(255, 255, 255, 0.14)',
+        borderRadius: 2.5,
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.45)',
+        width: '100%',
+        maxWidth: 780,
+      }}
+    >
+      <Stack direction="row" spacing={{ xs: 1, sm: 1.5 }} alignItems="center">
+        {/* Play / Pause Toggle Button */}
+        <Tooltip title={isPlaying ? 'Pause animation' : 'Play 48h forecast'}>
+          <IconButton
+            size="small"
+            color="primary"
+            onClick={onTogglePlay}
+            aria-label={isPlaying ? 'Pause timeline' : 'Play timeline'}
+            sx={{
+              p: 0.75,
+              bgcolor: isPlaying ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid',
+              borderColor: isPlaying ? 'primary.main' : 'rgba(255, 255, 255, 0.15)',
+              '&:hover': { bgcolor: 'rgba(56, 189, 248, 0.25)' },
+            }}
+          >
+            {isPlaying ? <PauseIcon sx={{ fontSize: 18 }} /> : <PlayArrowIcon sx={{ fontSize: 18 }} />}
+          </IconButton>
+        </Tooltip>
+
+        {/* Step Controls (-6h, +6h, Reset) */}
+        <Stack direction="row" spacing={0.25}>
+          <Tooltip title="Back 6 hours">
+            <span>
+              <IconButton
+                size="small"
+                onClick={() => onSliderChange(Math.max(0, sliderHour - 6))}
+                disabled={sliderHour === 0}
+                sx={{ color: 'text.secondary', p: 0.5 }}
+                aria-label="Rewind 6 hours"
+              >
+                <FastRewindIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </span>
           </Tooltip>
 
-          {/* Step Controls (-6h, +6h, Reset) */}
-          <Stack direction="row" spacing={0.5}>
-            <Tooltip title="Back 6 hours">
-              <span>
-                <IconButton
-                  size="small"
-                  onClick={() => onSliderChange(Math.max(0, sliderHour - 6))}
-                  disabled={sliderHour === 0}
-                  sx={{ color: 'text.secondary' }}
-                >
-                  <FastRewindIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </span>
-            </Tooltip>
-
-            <Tooltip title="Forward 6 hours">
-              <span>
-                <IconButton
-                  size="small"
-                  onClick={() => onSliderChange(Math.min(48, sliderHour + 6))}
-                  disabled={sliderHour === 48}
-                  sx={{ color: 'text.secondary' }}
-                >
-                  <FastForwardIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </span>
-            </Tooltip>
-
-            <Tooltip title="Reset to departure (0h)">
-              <span>
-                <IconButton
-                  size="small"
-                  onClick={() => onSliderChange(0)}
-                  disabled={sliderHour === 0}
-                  sx={{ color: 'text.secondary' }}
-                >
-                  <RestartAltIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </span>
-            </Tooltip>
-          </Stack>
-
-          <Divider orientation="vertical" flexItem sx={{ my: 0.5 }} />
-
-          {/* Area Forecast Timestamp Label */}
-          <Box sx={{ overflow: 'hidden' }}>
-            <Stack direction="row" spacing={0.75} alignItems="center">
-              <AccessTimeIcon sx={{ fontSize: 15, color: 'primary.main' }} />
-              <Typography
-                variant="caption"
-                sx={{
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  color: 'primary.light',
-                  letterSpacing: 0.5,
-                  fontSize: '0.6875rem',
-                }}
+          <Tooltip title="Forward 6 hours">
+            <span>
+              <IconButton
+                size="small"
+                onClick={() => onSliderChange(Math.min(48, sliderHour + 6))}
+                disabled={sliderHour === 48}
+                sx={{ color: 'text.secondary', p: 0.5 }}
+                aria-label="Forward 6 hours"
               >
-                Area forecast at this time (+{sliderHour}h)
-              </Typography>
-            </Stack>
+                <FastForwardIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </span>
+          </Tooltip>
 
-            <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', lineHeight: 1.2 }} noWrap>
-              {formattedClockTime}
-            </Typography>
-          </Box>
+          <Tooltip title="Reset to 0h">
+            <span>
+              <IconButton
+                size="small"
+                onClick={() => onSliderChange(0)}
+                disabled={sliderHour === 0}
+                sx={{ color: 'text.secondary', p: 0.5 }}
+                aria-label="Reset timeline"
+              >
+                <RestartAltIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </span>
+          </Tooltip>
         </Stack>
 
-        {/* 0–48h Timeline Slider */}
-        <Box sx={{ flex: 1, px: 2, minWidth: { md: 240 } }}>
+        <Divider orientation="vertical" flexItem sx={{ my: 0.5, borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+
+        {/* Clock Label */}
+        <Box sx={{ minWidth: { xs: 90, sm: 130 } }}>
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 700,
+              color: 'primary.light',
+              display: 'block',
+              fontSize: '0.625rem',
+              letterSpacing: 0.5,
+              textTransform: 'uppercase',
+              lineHeight: 1,
+            }}
+          >
+            +{sliderHour}h Forecast
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 600,
+              color: 'text.primary',
+              fontSize: '0.75rem',
+              whiteSpace: 'nowrap',
+              lineHeight: 1.3,
+            }}
+          >
+            {formattedClock}
+          </Typography>
+        </Box>
+
+        {/* Timeline Slider */}
+        <Box sx={{ flex: 1, px: 1 }}>
           <Slider
             value={sliderHour}
             min={0}
@@ -199,75 +191,62 @@ export default function HeatmapSlider({
             valueLabelDisplay="auto"
             valueLabelFormat={(v) => `+${v}h`}
             aria-label="0 to 48 hours forecast timeline slider"
-            getAriaValueText={(v) => `+${v} hours from departure`}
             sx={{
               color: 'primary.main',
-              py: 1,
+              py: 0.75,
               '& .MuiSlider-thumb': {
-                width: 18,
-                height: 18,
-                boxShadow: '0 0 10px rgba(56, 189, 248, 0.6)',
+                width: 14,
+                height: 14,
+                boxShadow: '0 0 8px rgba(56, 189, 248, 0.7)',
                 '&:hover, &.Mui-focusVisible': {
-                  boxShadow: '0 0 0 8px rgba(56, 189, 248, 0.25)',
+                  boxShadow: '0 0 0 6px rgba(56, 189, 248, 0.25)',
                 },
               },
               '& .MuiSlider-markLabel': {
-                fontSize: '0.6875rem',
+                fontSize: '0.625rem',
                 color: 'text.secondary',
-                mt: 0.5,
+                top: 20,
               },
               '& .MuiSlider-mark': {
-                height: 6,
+                height: 4,
                 width: 2,
-                bgcolor: 'rgba(255, 255, 255, 0.3)',
+                bgcolor: 'rgba(255, 255, 255, 0.25)',
+              },
+              '& .MuiSlider-rail': {
+                opacity: 0.2,
               },
             }}
           />
         </Box>
 
-        <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', lg: 'block' } }} />
+        {/* Heatmap Layer Toggle Chip */}
+        <Chip
+          icon={showHeatmap ? <LayersIcon sx={{ fontSize: '14px !important' }} /> : <LayersClearIcon sx={{ fontSize: '14px !important' }} />}
+          label={showHeatmap ? 'Heatmap: On' : 'Off'}
+          size="small"
+          onClick={onToggleHeatmap}
+          color={showHeatmap ? 'primary' : 'default'}
+          variant={showHeatmap ? 'filled' : 'outlined'}
+          sx={{
+            height: 26,
+            fontSize: '0.6875rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            border: '1px solid',
+            borderColor: showHeatmap ? 'primary.main' : 'rgba(255, 255, 255, 0.2)',
+          }}
+        />
 
-        {/* Heatmap Layer Toggle & Comparison Legend */}
-        <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="space-between">
-          <Button
-            size="small"
-            variant={showHeatmap ? 'contained' : 'outlined'}
-            color={showHeatmap ? 'primary' : 'inherit'}
-            startIcon={showHeatmap ? <LayersIcon /> : <LayersClearIcon />}
-            onClick={onToggleHeatmap}
-            sx={{
-              px: 1.5,
-              py: 0.75,
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              borderColor: 'rgba(255,255,255,0.15)',
-            }}
-          >
-            {showHeatmap ? 'Heatmap: On' : 'Heatmap: Off'}
-          </Button>
-
-          {/* Standard Palette Legend */}
-          <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap" useFlexGap>
-            {Object.values(RISK_CONFIG).map((cfg) => (
-              <RiskBadge key={cfg.key} level={cfg.level} size="small" />
-            ))}
-          </Stack>
-        </Stack>
+        {/* Distinction Info Tooltip */}
+        <Tooltip
+          title="Heatmap slider displays regional area forecast at +Xh across the corridor. Checkpoints show weather at the truck's arrival ETA."
+          arrow
+        >
+          <IconButton size="small" sx={{ color: 'text.secondary', p: 0.5 }}>
+            <InfoOutlinedIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Tooltip>
       </Stack>
-
-      {/* Explanatory Distinction Subtitle */}
-      <Typography
-        variant="caption"
-        sx={{
-          color: 'text.secondary',
-          display: 'block',
-          mt: 1,
-          textAlign: { xs: 'left', lg: 'center' },
-          fontSize: '0.7rem',
-        }}
-      >
-        <strong>Note:</strong> Heatmap slider displays <strong>Area forecast at this time</strong> across the entire corridor. Route checkpoint cards display <strong>Weather at your ETA</strong> based on truck travel speed.
-      </Typography>
     </Box>
   );
 }

@@ -121,11 +121,19 @@ def generate_recommendation_reason(
             return f"Fastest route, but adds {high_added:.1f} High miles vs recommended route."
         return "Fastest route, but has higher weather hazard exposure."
 
-    # Slower alternative with higher risk
+    # Slower alternative with higher or equal risk
     if recommended_route is not None:
         time_diff = round(route.duration_minutes - recommended_route.duration_minutes)
         time_str = f"+{time_diff} min vs recommended" if time_diff > 0 else "Slower"
-        return f"{time_str}, with higher overall weather hazard."
+        severe_diff = round(route.summary.severe_miles - recommended_route.summary.severe_miles, 1)
+        high_diff = round(route.summary.high_miles - recommended_route.summary.high_miles, 1)
+        if severe_diff > 0:
+            return f"{time_str}, encounters {severe_diff:.1f} more Severe miles."
+        if high_diff > 0:
+            return f"{time_str}, encounters {high_diff:.1f} more High miles."
+        if route.summary.avg_risk > recommended_route.summary.avg_risk:
+            return f"{time_str}, with higher overall weather hazard."
+        return f"{time_str} with comparable weather conditions."
 
     return "Alternative route option."
 

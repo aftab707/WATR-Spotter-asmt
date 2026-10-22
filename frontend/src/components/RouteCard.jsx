@@ -6,6 +6,7 @@ import {
   Stack,
   Chip,
   Tooltip,
+  Button,
 } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
 import SpeedIcon from '@mui/icons-material/Speed';
@@ -13,6 +14,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import BlockIcon from '@mui/icons-material/Block';
 import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
+import TableRowsIcon from '@mui/icons-material/TableRows';
 
 import RiskBadge from './RiskBadge';
 import RiskStrip from './RiskStrip';
@@ -36,6 +38,7 @@ export default function RouteCard({
   onMouseLeave,
   isFastest = false,
   onSelectCheckpoint,
+  onViewCheckpoints,
 }) {
   const isRec = route.is_recommended;
   const hasNoTravel = route.summary.no_travel_miles > 0;
@@ -318,6 +321,31 @@ export default function RouteCard({
           </Box>
         </Stack>
       </Box>
+
+      {/* Quick Action Button to View Checkpoints */}
+      {route.checkpoints && route.checkpoints.length > 0 && (
+        <Stack direction="row" justifyContent="flex-end" sx={{ mt: 1 }}>
+          <Button
+            size="small"
+            variant="text"
+            startIcon={<TableRowsIcon sx={{ fontSize: '13px !important' }} />}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onViewCheckpoints) onViewCheckpoints(route.id);
+            }}
+            sx={{
+              fontSize: '0.6875rem',
+              py: 0.25,
+              px: 0.75,
+              fontWeight: 600,
+              color: isSelected ? 'primary.light' : 'text.secondary',
+              '&:hover': { color: 'primary.main', bgcolor: 'transparent' },
+            }}
+          >
+            View {route.checkpoints.length} Checkpoints →
+          </Button>
+        </Stack>
+      )}
     </Paper>
   );
 }
@@ -350,4 +378,5 @@ RouteCard.propTypes = {
   onMouseLeave: PropTypes.func,
   isFastest: PropTypes.bool,
   onSelectCheckpoint: PropTypes.func,
+  onViewCheckpoints: PropTypes.func,
 };
