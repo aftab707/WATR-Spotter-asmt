@@ -7,7 +7,7 @@
 - [x] **Step 2 — Risk engine (pure) + tests**
 - [x] **Step 3 — Geometry: sampling, ETA, segments, summaries (pure) + tests**
 - [x] **Step 4 — Weather service**
-- [ ] **Step 5 — Routing + geocoding services**
+- [x] **Step 5 — Routing + geocoding services**
 - [ ] **Step 6 — Recommendation engine (pure) + tests**
 - [ ] **Step 7 — `/api/plan/` orchestrator**
 - [ ] **Step 8 — Frontend foundation**
@@ -51,3 +51,8 @@
 - **What changed:** Implemented Open-Meteo multi-coordinate batch weather client (`services/weather.py`) with automatic chunking (<= 50 points), `ThreadPoolExecutor` concurrency, per-call 8s timeout with 2 retries and backoff, `UpstreamError` mapping, Django cache integration keyed by `(round(lat,2), round(lon,2), date_window)`, `value_at(time)` nearest top-of-hour resolution, and 49-hour heatmap series generation.
 - **Files touched:** `backend/planner/services/weather.py`, `backend/planner/tests/test_weather.py`, `backend/config/settings.py`, `PROGRESS.md`.
 - **How to verify:** Run `pytest backend/planner/tests/test_weather.py --cov=planner.services.weather --cov-report=term-missing` to verify all 12 mock and fixture-driven tests pass with 98% coverage.
+
+### Step 5 — Routing + geocoding services
+- **What changed:** Implemented routing and geocoding services behind unified provider interfaces (`services/routing.py`, `services/geocoding.py`) with Mapbox + OSRM routing, automated provider fallback, perpendicular via-waypoint alternative generation, geometry overlap de-duplication (>90% threshold), and created the cached `/api/geocode/` endpoint returning max 6 results.
+- **Files touched:** `backend/planner/services/routing.py`, `backend/planner/services/geocoding.py`, `backend/planner/views.py`, `backend/planner/urls.py`, `backend/planner/tests/test_routing.py`, `backend/planner/tests/test_geocoding.py`, `PROGRESS.md`.
+- **How to verify:** Run `pytest backend/planner/tests/test_routing.py backend/planner/tests/test_geocoding.py` to verify provider fallback, via-waypoint trigger when <3 routes, duplicate pruning, and `/api/geocode/?q=chicago` 200 response.

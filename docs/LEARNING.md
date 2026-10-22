@@ -37,6 +37,14 @@
 - **Kaise kaam karta hai:** Service pehle coordinates ko 2 decimal places tak round karke cache check karti hai (`make_weather_cache_key`). Jo points cache mein na hon, unhein 50-point batches mein `ThreadPoolExecutor` ke through Open-Meteo se fetch kiya jaata hai. Per-call 8s timeout aur 2 retries configured hain. Hourly arrays se `rain + showers` aur `snowfall` extract hoti hain aur `value_at()` truck ke exact ETA ka nearest hour lookup karta hai.
 - **Interview mein kaise samjhaoge:** "Weather service ko production-grade performance ke liye design kiya gaya hai. Maine Open-Meteo ka multi-coordinate batching endpoint use kiya jismein chunks maximum 50 points ke banaye jaate hain taake URL length limit cross na ho, aur unhein `ThreadPoolExecutor` se parallel fetch kiya jata hai. Network I/O ko minimise karne ke liye spatial caching implement ki jo `(round(lat,2), round(lon,2), date-window)` par key banti hai, taake nearby checkpoints aur repeated searches zero-latency return hon."
 
+## Step 5 — Routing Providers, Via-Waypoint Alternatives & Geocoding Endpoint
+
+- **Kya banaya:** Humne routing aur geocoding services ko abstract interfaces ke peeche implement kiya (`services/routing.py`, `services/geocoding.py`). Isme Mapbox + OSRM routing, automatic provider fallback, perpendicular via-waypoint offset generator, geometry overlap de-duplication (>90%), aur cached `GET /api/geocode/` endpoint banaya.
+- **Kyun banaya:** Public OSRM routing engine long trips par sirf 2 alternatives return karta hai jabke humein 3 distinct options chahiye the. Saath hi geocoding search ko robust banana tha taake Mapbox key na hone par Photon aur Nominatim se address autocomplete seamlessly chale bina application crash kiye.
+- **Kaise kaam karta hai:** Agar routing provider se 3 se kam routes aate hain, toh routing engine Route 1 ke midpoint se perpendicular vector calculate karke offset waypoint banata hai aur uske through re-route karta hai. Agar naya route pehle se mojood route se >90% overlap karta hai toh discard ho jata hai warna add ho jata hai. Geocode endpoint query ko 24 hours ke liye cache karta hai aur max 6 clean results deta hai.
+- **Interview mein kaise samjhaoge:** "Step 5 mein maine Adapter Pattern use karke routing aur geocoding providers ko decoupled banaya. OSRM ki 2-route limitation ko solve karne ke liye maine midpoint perpendicular offset algorithm likha jo mathematical waypoint projection se legitimate 3rd alternative generate karta hai, aur point-proximity buffer se duplicate (>90% overlap) routes ko prune karta hai. Geocoding endpoint Photon aur Nominatim ke automatic fallback ke sath fail-safe banaya gaya hai."
+
+
 
 
 
