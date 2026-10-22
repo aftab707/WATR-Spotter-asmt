@@ -4,7 +4,7 @@
 
 - [x] **Step 0 — Bootstrap & conventions**
 - [x] **Step 1 — API spike (prove the providers before building on them)**
-- [ ] **Step 2 — Risk engine (pure) + tests**
+- [x] **Step 2 — Risk engine (pure) + tests**
 - [ ] **Step 3 — Geometry: sampling, ETA, segments, summaries (pure) + tests**
 - [ ] **Step 4 — Weather service**
 - [ ] **Step 5 — Routing + geocoding services**
@@ -36,3 +36,8 @@
 - **What changed:** Built and executed `backend/scripts/spike.py` testing OSRM routing on long & short city corridors, Photon & Nominatim geocoding, and Open-Meteo multi-coordinate batch weather; verified latency, units, and route alternative limitations; saved raw fixture JSON files and documented provider decisions in `docs/ARCHITECTURE.md`.
 - **Files touched:** `backend/scripts/spike.py`, `backend/planner/tests/fixtures/*` (`osrm_chicago_to_denver.json`, `osrm_chicago_to_milwaukee.json`, `photon_geocode_chicago.json`, `nominatim_geocode_chicago.json`, `open_meteo_batch_5pts.json`), `docs/ARCHITECTURE.md`, `PROGRESS.md`.
 - **How to verify:** Run `python backend/scripts/spike.py` and inspect console outputs and generated fixtures in `backend/planner/tests/fixtures/`; review provider validation in `docs/ARCHITECTURE.md`.
+
+### Step 2 — Risk engine (pure) + tests
+- **What changed:** Implemented pure checkpoint risk classification engine (`logic/risk.py`) with `RiskLevel` IntEnum (1 to 5), half-open wind bands, upper-inclusive rain/snow bands, strict gross load rules (> 30k lb, > 40k lb), invariant that load rules only raise risk, and full test matrix with 100% test coverage.
+- **Files touched:** `backend/planner/logic/risk.py`, `backend/planner/tests/test_risk.py`, `backend/requirements.txt`, `PROGRESS.md`.
+- **How to verify:** Run `pytest backend/planner/tests/test_risk.py --cov=planner.logic.risk --cov-report=term-missing` to confirm 42 boundary tests pass with 100% line coverage and 0 missing lines.
