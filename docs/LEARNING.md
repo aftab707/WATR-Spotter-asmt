@@ -23,6 +23,14 @@
 - **Kaise kaam karta hai:** Engine pehle teeno weather metrics (wind, rain, snow) ka individual level nikalta hai aur highest ko base risk banata hai. Phir load rules (>30,000 lb aur >40,000 lb par high wind) check hoti hain. Agar load rule risk ko badhata hai toh elevate karta hai, lekin yeh rule kabhi bhi weather risk ko kam (lower) nahi kar sakta.
 - **Interview mein kaise samjhaoge:** "Risk engine ko maine purely functional pattern par build kiya hai: zero side-effects, zero external I/O. Maine half-open bands aur upper-inclusive bands ke exact mathematical edge cases handle kiye jaise 30,000 lb vs 30,001 lb ki strict boundary check. Code par 100% test coverage achieve ki gayi hai taake core safety logic production mein bilkul infallible rahe."
 
+## Step 3 — Pure Geometry, ETA Progression, Segments & Route Summaries
+
+- **Kya banaya:** Humne teen pure mathematical modules banaye: `geometry.py` (Haversine distance, uniform checkpoint sampling, RDP simplification), `eta.py` (monotonic ETA progression aur nearest forecast hour lookup), aur `summary.py` (midpoint segment allocation, per-level miles, aur distance-weighted risk average).
+- **Kyun banaya:** Truck route corridors ko accurately divide karna zaroori tha taake driver ko pata chale ke uski gaari kis mile par kab pahuchegi aur kaunsa weather face karegi. Midpoint allocation isliye use ki taake severe weather ke miles mathematically total route distance ke barabar rahen aur koi float drift na aaye.
+- **Kaise kaam karta hai:** `sample_checkpoints` 10/25/50 miles par checkpoints generate karta hai aur aakhri destination checkpoint ko ensure karta hai. `eta.py` speed profile se monotonic time interpolate karta hai jo kabhi backwards nahi jaata. `calculate_segment_miles` telescoping midpoint formula use karta hai jiska sum strictly route distance ke barabar hota hai.
+- **Interview mein kaise samjhaoge:** "Step 3 mein maine core geospatial aur temporal math implement kiya. Maine Haversine formula aur Ramer-Douglas-Peucker (RDP) algorithm use karke 10,000+ points ki geometry ko 2,000 points se kam mein simplify kiya taake MapLibre frontend smooth 60fps par pan/zoom kare. Checkpoints ke liye midpoint Voronoi-style segment division implement ki jahan `sum(segment_miles) == route_distance` mathematical guarantee hai, aur ETA interpolation strictly monotonic hai."
+
+
 
 
 

@@ -5,7 +5,7 @@
 - [x] **Step 0 — Bootstrap & conventions**
 - [x] **Step 1 — API spike (prove the providers before building on them)**
 - [x] **Step 2 — Risk engine (pure) + tests**
-- [ ] **Step 3 — Geometry: sampling, ETA, segments, summaries (pure) + tests**
+- [x] **Step 3 — Geometry: sampling, ETA, segments, summaries (pure) + tests**
 - [ ] **Step 4 — Weather service**
 - [ ] **Step 5 — Routing + geocoding services**
 - [ ] **Step 6 — Recommendation engine (pure) + tests**
@@ -41,3 +41,8 @@
 - **What changed:** Implemented pure checkpoint risk classification engine (`logic/risk.py`) with `RiskLevel` IntEnum (1 to 5), half-open wind bands, upper-inclusive rain/snow bands, strict gross load rules (> 30k lb, > 40k lb), invariant that load rules only raise risk, and full test matrix with 100% test coverage.
 - **Files touched:** `backend/planner/logic/risk.py`, `backend/planner/tests/test_risk.py`, `backend/requirements.txt`, `PROGRESS.md`.
 - **How to verify:** Run `pytest backend/planner/tests/test_risk.py --cov=planner.logic.risk --cov-report=term-missing` to confirm 42 boundary tests pass with 100% line coverage and 0 missing lines.
+
+### Step 3 — Geometry: sampling, ETA, segments, summaries (pure) + tests
+- **What changed:** Implemented pure mathematical modules for route geometry (`logic/geometry.py`), ETA time progression (`logic/eta.py`), and corridor segment allocation/summary (`logic/summary.py`); verified Haversine distance, uniform interval checkpoint sampling (10/25/50 miles) with terminal milestone insertion, RDP polyline decimation (<= 2000 points), monotonic ETA interpolation, exact midpoint segment distance conservation (`sum(segments) == total_distance`), and distance-weighted average risk computation.
+- **Files touched:** `backend/planner/logic/geometry.py`, `backend/planner/logic/eta.py`, `backend/planner/logic/summary.py`, `backend/planner/tests/test_geometry.py`, `backend/planner/tests/test_eta.py`, `backend/planner/tests/test_summary.py`, `PROGRESS.md`.
+- **How to verify:** Run `pytest backend --cov=planner.logic --cov-report=term-missing` to verify all 71 unit tests pass with 99% coverage across all pure logic modules.
