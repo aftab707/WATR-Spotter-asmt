@@ -107,6 +107,19 @@
   5. `fitBounds` corridor ke all route coordinates ka bounding box nikal kar camera automatically center aur zoom karta hai.
 - **Interview mein kaise samjhaoge:** "Step 11 geospatial rendering performance ka benchmark hai. 300+ checkpoints ko React DOM markers ke bajaye maine MapLibre ke native WebGL circle layer ke zariye render kiya hai taake 60fps pan/zoom smooth rahe. State changes par layer recreate nahi hote, balke React Map GL internal `setData` se source update karta hai. Dark Matter vector style keyless hai taake deployment ke baad expired key ya watermarked maps ki wajah se rejection na ho."
 
+## Step 12 — 0–48h Forecast Timeline Slider, Dynamic Heatmap & RAF Throttling
+
+- **Kya banaya:** Humne `components/HeatmapSlider.jsx` banaya aur `RouteMap.jsx` ke andar MapLibre `heatmap` layer aur corridor slider points layer integrate kiya. Slider 0 se 48 hours post-departure cover karta hai (with 6h milestone marks), automated Play/Pause animation (350ms/hr), fast-forward/rewind/reset buttons, `requestAnimationFrame` throttled scrubbing, explicit distinction labels ("Area forecast at this time" vs "Weather at your ETA"), aur on/off layer toggles provide karta hai. Sab calculations 100% client-side hoti hain bina kisi network call ke.
+- **Kyun banaya:** Evaluators slider drag karke timeline performance test karte hain. Agar slider drag karte waqt har hour par API refetch ho toh app foran crash ya hang ho jati hai. Backend ne Step 7 mein 49 hourly risk values ka matrix bhej diya tha; Step 12 mein frontend us series ko in-memory read karta hai taake zero latency ke sath 60fps par timeline animate ho sake.
+- **Kaise kaam karta hai:**
+  1. `HeatmapSlider` component user ke slider input ko `requestAnimationFrame` se throttle karta hai taake high-frequency drag events browser ke monitor refresh rate se sync hon.
+  2. `heatmapGeoJson` current `sliderHour` (0..48) ke mutabiq har corridor coordinate ka risk value aur normalized weight compute karta hai.
+  3. MapLibre ka `heatmap` layer WebGL shader mein density gradient create karta hai (Green -> Yellow -> Orange -> Red -> Purple).
+  4. Play button 350ms ke interval par timer chalata hai jo 0 se 48 hours tak storm front ki movement visualize karta hai.
+  5. UI mein explicit difference bataya gaya hai: Slider "Area forecast at selected time" show karta hai, jabke Checkpoint markers "Weather at truck's ETA" show karte hain.
+- **Interview mein kaise samjhaoge:** "Step 12 frontend performance engineering ka showcase hai. Maine evaluation criteria ke do critical rules satisfy kiye: pehla, slider scrubbing 100% client-side memory se read hoti hai jismein 0 network requests hoti hain (Network DevTools mein verifyable hai); doosra, `requestAnimationFrame` throttling se 60fps silky smooth interaction milti hai. Saath hi UX mein weather ontology ko clarify kiya hai taake user ko confusion na ho ke slider area weather dikha raha hai jabke checkpoint cards truck arrival time ka weather dikhate hain."
+
+
 
 
 

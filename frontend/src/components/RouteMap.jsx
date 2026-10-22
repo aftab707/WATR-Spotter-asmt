@@ -20,10 +20,13 @@ import {
 } from '@mui/material';
 import CenterFocusStrongIcon from '@mui/icons-material/CenterFocusStrong';
 import LayersIcon from '@mui/icons-material/Layers';
+import LayersClearIcon from '@mui/icons-material/LayersClear';
 import AirIcon from '@mui/icons-material/Air';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import AcUnitIcon from '@mui/icons-material/AcUnit';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import dayjs from 'dayjs';
 
 import RiskBadge from './RiskBadge';
 import { formatMph, formatInHr, formatDateTime } from '../lib/formatters';
@@ -45,10 +48,16 @@ export default function RouteMap({
   hoveredRouteId,
   onSelectRoute,
   loadWeightLb,
+  heatmap = null,
+  sliderHour = 0,
+  showHeatmap = true,
+  onToggleHeatmap,
+  departureTime,
 }) {
   const mapRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedCheckpoint, setSelectedCheckpoint] = useState(null);
+  const [selectedAreaPoint, setSelectedAreaPoint] = useState(null);
   const [showLegend, setShowLegend] = useState(true);
 
   const activeRoute = useMemo(() => {
@@ -129,7 +138,7 @@ export default function RouteMap({
     };
   }, [routes, selectedRouteId, hoveredRouteId]);
 
-  // GeoJSON FeatureCollection for checkpoints of the active route
+  // GeoJSON FeatureCollection for checkpoints of the active route (Truck's ETA weather)
   const checkpointsGeoJson = useMemo(() => {
     if (!activeRoute?.checkpoints) {
       return { type: 'FeatureCollection', features: [] };
@@ -164,9 +173,48 @@ export default function RouteMap({
     };
   }, [activeRoute]);
 
-  // Handle click on map layers (route line or checkpoint circle)
+  // GeoJSON FeatureCollection for 0–48h Heatmap Points at sliderHour (Area Forecast)
+  // Computed 100% client-side from the pre-loaded series — zero network requests
+  const heatmapGeoJson = useMemo(() => {
+    if (!heatmap?.points || !showHeatmap) {
+      return { type: 'FeatureCollection', features: [] };
+    }
+
+    const currentHourIndex = Math.min(48, Math.max(0, Math.round(sliderHour)));
+
+    return {
+      type: 'FeatureCollection',
+      features: heatmap.points.map((pt, idx) => {
+        const riskVal = pt.risk ? pt.risk[currentHourIndex] || 1 : 1;
+        // Normalize weight for MapLibre heatmap shader (0.1 for Low up to 1.0 for No Travel)
+        const weight = Math.max(0.12, (riskVal - 1) / 4);
+
+        return {
+          type: 'Feature',
+          id: `hm-${idx}`,
+          geometry: {
+            type: 'Point',
+            coordinates: [pt.lon, pt.lat],
+          },
+          properties: {
+            index: idx,
+            lat: pt.lat,
+            lon: pt.lon,
+            risk: riskVal,
+            weight: weight,
+            route_ids: pt.route_ids || [],
+            hour_offset: currentHourIndex,
+          },
+        };
+      }),
+    };
+  }, [heatmap, sliderHour, showHeatmap]);
+
+  // Handle clicks on map layers
   const handleMapClick = (event) => {
     const features = event.features || [];
+
+    // 1. Checkpoint circle clicked (Truck ETA)
     const checkpointFeature = features.find((f) => f.layer.id === 'checkpoint-markers-layer');
     if (checkpointFeature) {
       const [lon, lat] = checkpointFeature.geometry.coordinates;
@@ -175,9 +223,24 @@ export default function RouteMap({
         lon,
         lat,
       });
+      setSelectedAreaPoint(null);
       return;
     }
 
+    // 2. Area forecast point clicked (Heatmap corridor point at sliderHour)
+    const areaPointFeature = features.find((f) => f.layer.id === 'corridor-slider-points-layer');
+    if (areaPointFeature) {
+      const [lon, lat] = areaPointFeature.geometry.coordinates;
+      setSelectedAreaPoint({
+        ...areaPointFeature.properties,
+        lon,
+        lat,
+      });
+      setSelectedCheckpoint(null);
+      return;
+    }
+
+    // 3. Route polyline clicked
     const routeFeature = features.find((f) => f.layer.id === 'route-lines-layer');
     if (routeFeature) {
       const clickedRouteId = routeFeature.properties.id;
@@ -187,9 +250,16 @@ export default function RouteMap({
       return;
     }
 
-    // Dismiss checkpoint popup when clicking elsewhere on map
+    // Dismiss popups when clicking blank area
     setSelectedCheckpoint(null);
+    setSelectedAreaPoint(null);
   };
+
+  const sliderTimeFormatted = useMemo(() => {
+    if (!departureTime) return '';
+    const d = dayjs(departureTime).add(sliderHour, 'hour');
+    return d.format('MMM D, h:00 A');
+  }, [departureTime, sliderHour]);
 
   return (
     <Box sx={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
@@ -203,7 +273,11 @@ export default function RouteMap({
         mapStyle={CARTO_DARK_MATTER_STYLE}
         onLoad={() => setMapLoaded(true)}
         onClick={handleMapClick}
-        interactiveLayerIds={['route-lines-layer', 'checkpoint-markers-layer']}
+        interactiveLayerIds={[
+          'route-lines-layer',
+          'checkpoint-markers-layer',
+          'corridor-slider-points-layer',
+        ]}
         cursor="pointer"
         attributionControl={false}
         style={{ width: '100%', height: '100%' }}
@@ -212,6 +286,87 @@ export default function RouteMap({
         <NavigationControl position="top-right" showCompass={false} />
         <FullscreenControl position="top-right" />
         <ScaleControl position="bottom-right" unit="imperial" />
+
+        {/* 0–48h Dynamic Weather Heatmap Layer (Step 12) */}
+        {showHeatmap && (
+          <Source id="heatmap-source" type="geojson" data={heatmapGeoJson}>
+            <Layer
+              id="corridor-heatmap-layer"
+              type="heatmap"
+              paint={{
+                'heatmap-weight': ['get', 'weight'],
+                'heatmap-intensity': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  3,
+                  0.7,
+                  7,
+                  1.6,
+                  10,
+                  2.8,
+                ],
+                'heatmap-color': [
+                  'interpolate',
+                  ['linear'],
+                  ['heatmap-density'],
+                  0,
+                  'rgba(0, 0, 0, 0)',
+                  0.18,
+                  'rgba(34, 197, 94, 0.45)', // Low (Green)
+                  0.38,
+                  'rgba(234, 179, 8, 0.65)', // Moderate (Yellow)
+                  0.62,
+                  'rgba(249, 115, 22, 0.8)', // High (Orange)
+                  0.82,
+                  'rgba(239, 68, 68, 0.9)', // Severe (Red)
+                  1.0,
+                  'rgba(168, 85, 247, 0.98)', // No Travel (Purple)
+                ],
+                'heatmap-radius': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  3,
+                  15,
+                  6,
+                  28,
+                  9,
+                  45,
+                ],
+                'heatmap-opacity': 0.72,
+              }}
+            />
+
+            {/* Corridor Point Markers at sliderHour (Area Forecast) */}
+            <Layer
+              id="corridor-slider-points-layer"
+              type="circle"
+              paint={{
+                'circle-radius': 4.5,
+                'circle-color': [
+                  'match',
+                  ['get', 'risk'],
+                  1,
+                  RISK_CONFIG[1].color,
+                  2,
+                  RISK_CONFIG[2].color,
+                  3,
+                  RISK_CONFIG[3].color,
+                  4,
+                  RISK_CONFIG[4].color,
+                  5,
+                  RISK_CONFIG[5].color,
+                  '#38bdf8',
+                ],
+                'circle-opacity': 0.8,
+                'circle-stroke-width': 1,
+                'circle-stroke-color': '#ffffff',
+                'circle-stroke-opacity': 0.5,
+              }}
+            />
+          </Source>
+        )}
 
         {/* Route Polylines Source & Layer */}
         <Source id="routes-source" type="geojson" data={routesGeoJson}>
@@ -230,7 +385,7 @@ export default function RouteMap({
           />
         </Source>
 
-        {/* Checkpoint Markers Source & Layers (GPU-accelerated circles) */}
+        {/* Checkpoint Markers Source & Layers (Truck's ETA weather) */}
         <Source id="checkpoints-source" type="geojson" data={checkpointsGeoJson}>
           {/* Subtle Outer Halo for visibility */}
           <Layer
@@ -239,7 +394,7 @@ export default function RouteMap({
             paint={{
               'circle-radius': 8,
               'circle-color': '#000000',
-              'circle-opacity': 0.4,
+              'circle-opacity': 0.5,
             }}
           />
 
@@ -271,7 +426,7 @@ export default function RouteMap({
           />
         </Source>
 
-        {/* Checkpoint Detail Popup */}
+        {/* Checkpoint Detail Popup (Truck's ETA) */}
         {selectedCheckpoint && (
           <Popup
             longitude={Number(selectedCheckpoint.lon)}
@@ -294,12 +449,20 @@ export default function RouteMap({
               }}
             >
               {/* Header */}
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                   Mile {selectedCheckpoint.mile?.toFixed(1)}
                 </Typography>
                 <RiskBadge level={Number(selectedCheckpoint.risk)} size="small" />
               </Stack>
+
+              <Chip
+                label="Weather at Truck ETA"
+                size="small"
+                variant="outlined"
+                color="primary"
+                sx={{ height: 18, fontSize: '0.625rem', mb: 1, fontWeight: 700 }}
+              />
 
               <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1.5 }}>
                 ETA: {formatDateTime(selectedCheckpoint.eta)} • {selectedCheckpoint.route_label}
@@ -388,10 +551,77 @@ export default function RouteMap({
             </Paper>
           </Popup>
         )}
+
+        {/* Area Forecast Detail Popup (Heatmap Slider Hour) */}
+        {selectedAreaPoint && (
+          <Popup
+            longitude={Number(selectedAreaPoint.lon)}
+            latitude={Number(selectedAreaPoint.lat)}
+            anchor="bottom"
+            onClose={() => setSelectedAreaPoint(null)}
+            closeOnClick={false}
+            offset={12}
+          >
+            <Paper
+              sx={{
+                p: 1.75,
+                minWidth: 240,
+                maxWidth: 300,
+                bgcolor: '#111827',
+                color: 'text.primary',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                borderRadius: 2,
+              }}
+            >
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  Area Weather Forecast
+                </Typography>
+                <RiskBadge level={Number(selectedAreaPoint.risk)} size="small" />
+              </Stack>
+
+              <Chip
+                icon={<AccessTimeIcon sx={{ fontSize: '13px !important' }} />}
+                label={`+{sliderHour}h Post Departure`}
+                size="small"
+                variant="outlined"
+                color="secondary"
+                sx={{ height: 20, fontSize: '0.65rem', mb: 1, fontWeight: 700 }}
+              />
+
+              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+                Forecast Time: <strong>{sliderTimeFormatted}</strong>
+              </Typography>
+
+              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                Location: {Number(selectedAreaPoint.lat).toFixed(2)}°, {Number(selectedAreaPoint.lon).toFixed(2)}°
+              </Typography>
+            </Paper>
+          </Popup>
+        )}
       </Map>
 
-      {/* Map Action Floating Buttons (Fit to bounds & Toggle legend) */}
+      {/* Map Action Floating Buttons (Fit to bounds & Toggle Heatmap & Toggle Legend) */}
       <Box sx={{ position: 'absolute', top: 16, right: 54, display: 'flex', gap: 1, zIndex: 10 }}>
+        {/* Toggle Heatmap Button */}
+        <Tooltip title={showHeatmap ? 'Hide 0–48h Heatmap layer' : 'Show 0–48h Heatmap layer'}>
+          <IconButton
+            size="small"
+            onClick={onToggleHeatmap}
+            sx={{
+              bgcolor: 'rgba(17, 24, 39, 0.85)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: showHeatmap ? 'primary.main' : 'text.disabled',
+              '&:hover': { bgcolor: 'rgba(30, 41, 59, 0.95)' },
+            }}
+          >
+            {showHeatmap ? <LayersIcon sx={{ fontSize: 18 }} /> : <LayersClearIcon sx={{ fontSize: 18 }} />}
+          </IconButton>
+        </Tooltip>
+
+        {/* Fit to Corridor Button */}
         <Tooltip title="Fit camera to entire route corridor">
           <IconButton
             size="small"
@@ -408,6 +638,7 @@ export default function RouteMap({
           </IconButton>
         </Tooltip>
 
+        {/* Legend Visibility Button */}
         <Tooltip title={showLegend ? 'Hide map legend' : 'Show map legend'}>
           <IconButton
             size="small"
@@ -432,15 +663,17 @@ export default function RouteMap({
             position: 'absolute',
             bottom: 24,
             left: 20,
-            p: 1.5,
-            bgcolor: 'rgba(17, 24, 39, 0.9)',
+            p: 1.75,
+            bgcolor: 'rgba(17, 24, 39, 0.92)',
             backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255,255,255,0.12)',
+            border: '1px solid rgba(255,255,255,0.14)',
             borderRadius: 2,
             zIndex: 10,
-            minWidth: 210,
+            minWidth: 230,
+            maxWidth: 290,
           }}
         >
+          {/* Header */}
           <Typography
             variant="caption"
             sx={{
@@ -452,11 +685,24 @@ export default function RouteMap({
               mb: 1,
             }}
           >
-            Corridor Route Legend
+            Map Legend &amp; Distinction
           </Typography>
 
-          {/* Route Lines */}
-          <Stack spacing={0.75} sx={{ mb: 1.5 }}>
+          {/* Route Alternatives Section */}
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 600,
+              color: 'text.primary',
+              display: 'block',
+              fontSize: '0.6875rem',
+              mb: 0.5,
+            }}
+          >
+            Route Lines
+          </Typography>
+
+          <Stack spacing={0.65} sx={{ mb: 1.5 }}>
             {routes.map((r) => {
               const isSelected = r.id === selectedRouteId;
               const color = ROUTE_LINE_COLORS[r.id] || DEFAULT_ROUTE_COLOR;
@@ -482,32 +728,57 @@ export default function RouteMap({
                       borderRadius: 1,
                     }}
                   />
-                  <Typography variant="caption" sx={{ fontWeight: isSelected ? 700 : 500 }}>
+                  <Typography variant="caption" sx={{ fontWeight: isSelected ? 700 : 500 }} noWrap>
                     {r.label}
                   </Typography>
                   {r.is_recommended && (
-                    <Chip label="Rec" size="small" color="success" sx={{ height: 16, fontSize: '0.625rem' }} />
+                    <Chip label="Rec" size="small" color="success" sx={{ height: 16, fontSize: '0.625rem', px: 0.5 }} />
                   )}
                 </Stack>
               );
             })}
           </Stack>
 
+          {/* Distinction: Area Heatmap vs Checkpoints */}
+          <Box
+            sx={{
+              p: 1,
+              borderRadius: 1,
+              bgcolor: 'background.default',
+              border: '1px solid rgba(255,255,255,0.06)',
+              mb: 1.5,
+            }}
+          >
+            <Stack spacing={0.5}>
+              <Stack direction="row" spacing={0.75} alignItems="center">
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', border: '2px solid #38bdf8' }} />
+                <Typography variant="caption" sx={{ fontSize: '0.6875rem', color: 'primary.light' }}>
+                  <strong>Heatmap:</strong> Area forecast at +{sliderHour}h
+                </Typography>
+              </Stack>
+              <Stack direction="row" spacing={0.75} alignItems="center">
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#22c55e' }} />
+                <Typography variant="caption" sx={{ fontSize: '0.6875rem', color: 'text.secondary' }}>
+                  <strong>Checkpoints:</strong> Weather at truck ETA
+                </Typography>
+              </Stack>
+            </Stack>
+          </Box>
+
+          {/* Checkpoint Risk Tiers */}
           <Typography
             variant="caption"
             sx={{
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: 0.5,
-              color: 'text.secondary',
+              fontWeight: 600,
+              color: 'text.primary',
               display: 'block',
-              mb: 0.75,
+              fontSize: '0.6875rem',
+              mb: 0.5,
             }}
           >
-            Checkpoint Risk (ETA)
+            Risk Tiers
           </Typography>
 
-          {/* Checkpoint Risk Tiers */}
           <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
             {Object.values(RISK_CONFIG).map((cfg) => (
               <Stack key={cfg.key} direction="row" spacing={0.5} alignItems="center" sx={{ mr: 0.75, mb: 0.5 }}>
@@ -556,4 +827,19 @@ RouteMap.propTypes = {
   hoveredRouteId: PropTypes.string,
   onSelectRoute: PropTypes.func,
   loadWeightLb: PropTypes.number,
+  heatmap: PropTypes.shape({
+    hours: PropTypes.arrayOf(PropTypes.number),
+    points: PropTypes.arrayOf(
+      PropTypes.shape({
+        lat: PropTypes.number.isRequired,
+        lon: PropTypes.number.isRequired,
+        route_ids: PropTypes.arrayOf(PropTypes.string),
+        risk: PropTypes.arrayOf(PropTypes.number),
+      })
+    ),
+  }),
+  sliderHour: PropTypes.number,
+  showHeatmap: PropTypes.bool,
+  onToggleHeatmap: PropTypes.func,
+  departureTime: PropTypes.string,
 };

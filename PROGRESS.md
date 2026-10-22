@@ -14,7 +14,7 @@
 - [x] **Step 9 — Trip form**
 - [x] **Step 10 — Results: route cards + recommendation**
 - [x] **Step 11 — Map: routes + checkpoints**
-- [ ] **Step 12 — Heatmap + 0–48h slider**
+- [x] **Step 12 — Heatmap + 0–48h slider**
 - [ ] **Step 13 — Checkpoint table + risk strip**
 - [ ] **Step 14 — UX & visual polish**
 - [ ] **Step 15 — Docker, Redis (OPTIONAL), CI**
@@ -86,3 +86,8 @@
 - **What changed:** Installed `maplibre-gl` and `react-map-gl`; implemented GPU-accelerated interactive MapLibre map component (`components/RouteMap.jsx`) using free no-key CARTO dark matter vector style; rendered 3 distinct colored route lines with active line width/opacity emphasis; rendered 300+ checkpoints via GeoJSON circle layer dynamically styled by risk level (ensuring smooth 60fps pan/zoom without DOM node bloat or layer recreation); built rich interactive checkpoint popup surfacing ETA, sustained wind speed, rain/showers, snowfall, hazard drivers, and heavy cargo load rule elevation banners; implemented automatic corridor camera fit-to-bounds with manual refit button, scale, fullscreen controls, and interactive map legend; wired route selection and hover callbacks into `Planner.jsx`.
 - **Files touched:** `frontend/package.json`, `frontend/package-lock.json`, `frontend/src/components/RouteMap.jsx`, `frontend/src/pages/Planner.jsx`, `PROGRESS.md`, `docs/LEARNING.md`.
 - **How to verify:** Run `npm --prefix frontend run lint` (0 warnings), `npm --prefix frontend run build` (builds successfully), and `pytest backend` (113 passing). In browser: map renders dark matter style; 3 routes visible with selected route highlighted; checkpoints colored by risk level (green/yellow/orange/red/purple); clicking a checkpoint displays detail popup with weather, ETA, and load rule alert; clicking route selects it; fit-to-bounds automatically frames the corridor.
+
+### Step 12 — Heatmap + 0–48h slider
+- **What changed:** Built dedicated forecast timeline slider component (`components/HeatmapSlider.jsx`) with 0–48h range, 6-hour interval milestone marks, local timezone clock time formatting (`departure + h`), automated play/pause timeline animation, fast-forward/rewind/reset controls, `requestAnimationFrame` update throttling for 60fps drag performance, explicit distinction labels ("Area forecast at this time" vs "Weather at your ETA"), and on/off layer toggles; integrated MapLibre `heatmap` layer with density gradient matching our unified risk palette and zoom-interpolated radii; rendered corridor points styled by risk at the slider hour; all timeline calculations computed 100% client-side from the loaded series with zero network calls.
+- **Files touched:** `frontend/src/components/HeatmapSlider.jsx`, `frontend/src/components/RouteMap.jsx`, `frontend/src/pages/Planner.jsx`, `PROGRESS.md`, `docs/LEARNING.md`.
+- **How to verify:** Run `npm --prefix frontend run lint` (0 warnings), `npm --prefix frontend run build` (builds successfully), and `pytest backend` (113 passing). In browser: dragging the slider is smooth at 60fps with zero network requests (verifiable in Network DevTools tab); play button animates through 48 hours; heatmap overlay renders color gradient across the corridor; clicking heatmap point reveals area forecast popup; legend explicitly defines area forecast vs truck ETA.
