@@ -17,7 +17,7 @@
 - [x] **Step 12 — Heatmap + 0–48h slider**
 - [x] **Step 13 — Checkpoint table + risk strip**
 - [x] **Step 14 — UX & visual polish**
-- [ ] **Step 15 — Docker, Redis (OPTIONAL), CI**
+- [x] **Step 15 — Docker, Redis (OPTIONAL), CI**
 - [ ] **Step 16 — Deploy**
 - [ ] **Step 17 — Documentation & Loom prep**
 - [ ] **Step 18 — Final QA (do not skip)**
@@ -101,5 +101,11 @@
 - **What changed:** Conducted a comprehensive design system and accessibility pass across the frontend: enforced strict 8px spacing, unified 8px border radius, and max 2 font weights (400 regular, 600 semi-bold) across MUI theme; integrated `prefers-reduced-motion` media query and universal `:focus-visible` accessibility indicators in `MuiCssBaseline`; created custom commercial truck and storm SVG favicon (`public/favicon.svg`), updated `index.html` with description/theme-color meta tags and `<title>WATR — Weather-Aware Truck Routing</title>`; built responsive mobile layout switcher in `ShellLayout.jsx` allowing phones and tablets (<900px) to seamlessly toggle between "Routes & Setup" and "Map & Weather" with automatic view transitions upon route calculation; added friendly "Server waking up…" cold-start chip and subtext in `AppHeader.jsx` and `TripForm.jsx` to gracefully communicate free-tier backend spin-up delays.
 - **Files touched:** `frontend/index.html`, `frontend/public/favicon.svg`, `frontend/src/theme/theme.js`, `frontend/src/components/ShellLayout.jsx`, `frontend/src/components/AppHeader.jsx`, `frontend/src/components/TripForm.jsx`, `frontend/src/components/HeatmapSlider.jsx`, `frontend/src/pages/Planner.jsx`, `PROGRESS.md`, `docs/LEARNING.md`.
 - **How to verify:** Run `npm --prefix frontend run lint` (0 warnings), `npm --prefix frontend run build` (builds cleanly), and `pytest backend` (113 passing). In browser: inspect at 375px (mobile), 768px (tablet), and 1440px (desktop)—all layouts align with zero overflow or crushed maps; tab navigation works on mobile; favicon renders in browser tab; focus outlines appear on keyboard tab navigation; motion honors `prefers-reduced-motion`.
+
+### Step 15 — Docker, Redis (OPTIONAL), CI
+- **What changed:** Containerized full application stack with production `backend/Dockerfile` (Python 3.12-slim, WhiteNoise collectstatic, Gunicorn WSGI workers, curl healthchecks) and multi-stage `frontend/Dockerfile` (Node 20 Vite build + Nginx alpine reverse proxy with SPA fallback and gzip compression); authored root `docker-compose.yml` linking backend, frontend, and healthchecked Redis service with shared bridge network and environment defaults; created `.dockerignore` files; added GitHub Actions CI pipeline (`.github/workflows/ci.yml`) running Ruff linter + Pytest with coverage on backend and ESLint + Vite production build on frontend.
+- **Files touched:** `backend/Dockerfile`, `backend/.dockerignore`, `backend/requirements.txt`, `frontend/Dockerfile`, `frontend/nginx.conf`, `frontend/.dockerignore`, `docker-compose.yml`, `.dockerignore`, `.github/workflows/ci.yml`, `PROGRESS.md`.
+- **How to verify:** Run `ruff check backend`, `pytest backend` (113 passed), `npm --prefix frontend run lint`, and `npm --prefix frontend run build`. Full stack can be launched via `docker compose up --build`.
+
 
 
