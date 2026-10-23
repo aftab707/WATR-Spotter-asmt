@@ -8,6 +8,7 @@ Implements multi-provider geocoding with automated fallback:
 5. Returns max 6 results matching Section 5 API contract.
 """
 
+import hashlib
 import logging
 import os
 from abc import ABC, abstractmethod
@@ -227,7 +228,9 @@ class GeocodingService:
         if not clean_q or len(clean_q) < 2:
             return []
 
-        cache_key = f"watr:geocode:{clean_q.lower()}:{limit}"
+        # Hash query to prevent spaces/commas from triggering memcached/redis cache key warnings
+        q_hash = hashlib.sha256(clean_q.lower().encode('utf-8')).hexdigest()[:32]
+        cache_key = f"watr:geocode:{q_hash}:{limit}"
         if self.use_cache:
             cached = cache.get(cache_key)
             if cached is not None:

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import dayjs from 'dayjs';
 import {
   Box,
   Typography,
@@ -41,6 +42,21 @@ export default function Planner() {
   const [isDemoMode, setIsDemoMode] = useState(true); // Default to realistic storm benchmark scenario
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [tripParams, setTripParams] = useState({
+    origin: {
+      label: 'Chicago, IL, USA',
+      lat: 41.8781,
+      lon: -87.6298,
+    },
+    destination: {
+      label: 'Denver, CO, USA',
+      lat: 39.7392,
+      lon: -104.9903,
+    },
+    departure_time: dayjs().add(2, 'hour').toISOString(),
+    load_weight_lb: 42000,
+    sampling_interval_miles: 25,
+  });
 
   const planTripMutation = usePlanTrip();
 
@@ -83,6 +99,7 @@ export default function Planner() {
   const handlePlanSubmit = async (formData) => {
     setServerError(null);
     setIsDemoMode(false);
+    setTripParams(formData);
     try {
       const response = await planTripMutation.mutateAsync(formData);
       setPlan(response);
@@ -107,7 +124,12 @@ export default function Planner() {
       setFocusedCheckpoint(null);
     } else {
       setIsDemoMode(false);
-      handlePlanSubmit(plan.meta);
+      const liveParams = {
+        ...tripParams,
+        departure_time: dayjs().add(2, 'hour').toISOString(),
+      };
+      setTripParams(liveParams);
+      handlePlanSubmit(liveParams);
     }
   };
 
@@ -120,7 +142,17 @@ export default function Planner() {
         setPlan(fixture);
         setSelectedRouteId(fixture.recommended_route_id || fixture.routes[0]?.id);
       } else {
-        const response = await planTripMutation.mutateAsync(plan.meta);
+        // Ensure departure time is refreshed if it has drifted into the past
+        let currentDep = dayjs(tripParams.departure_time);
+        if (!currentDep.isValid() || currentDep.isBefore(dayjs().subtract(30, 'minute'))) {
+          currentDep = dayjs().add(1, 'hour');
+        }
+        const refreshedParams = {
+          ...tripParams,
+          departure_time: currentDep.toISOString(),
+        };
+        setTripParams(refreshedParams);
+        const response = await planTripMutation.mutateAsync(refreshedParams);
         setPlan(response);
         setSelectedRouteId(response.recommended_route_id || response.routes[0]?.id);
       }
@@ -149,6 +181,13 @@ export default function Planner() {
     setSliderHour(0);
     setFocusedCheckpoint(null);
     setServerError(null);
+    setTripParams({
+      origin: { label: 'Chicago, IL, USA', lat: 41.8781, lon: -87.6298 },
+      destination: { label: 'Denver, CO, USA', lat: 39.7392, lon: -104.9903 },
+      departure_time: dayjs().add(2, 'hour').toISOString(),
+      load_weight_lb: 42000,
+      sampling_interval_miles: 25,
+    });
     setToast({
       open: true,
       message: 'Trip reset to default benchmark scenario (Chicago, IL → Denver, CO).',
