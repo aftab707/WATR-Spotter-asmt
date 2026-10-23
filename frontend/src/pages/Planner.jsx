@@ -39,7 +39,6 @@ export default function Planner() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [serverError, setServerError] = useState(null);
-  const [isDemoMode, setIsDemoMode] = useState(true); // Default to realistic storm benchmark scenario
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [tripParams, setTripParams] = useState({
@@ -98,7 +97,6 @@ export default function Planner() {
 
   const handlePlanSubmit = async (formData) => {
     setServerError(null);
-    setIsDemoMode(false);
     setTripParams(formData);
     try {
       const response = await planTripMutation.mutateAsync(formData);
@@ -113,49 +111,29 @@ export default function Planner() {
     }
   };
 
-  // Switch between Severe Storm Demo and Live API
-  const handleToggleDemoMode = () => {
-    if (!isDemoMode) {
-      setIsDemoMode(true);
-      const fixture = getMockPlanFixture();
-      setPlan(fixture);
-      setSelectedRouteId(fixture.recommended_route_id || fixture.routes[0]?.id);
-      setSliderHour(0);
-      setFocusedCheckpoint(null);
-    } else {
-      setIsDemoMode(false);
-      const liveParams = {
-        ...tripParams,
-        departure_time: dayjs().add(2, 'hour').toISOString(),
-      };
-      setTripParams(liveParams);
-      handlePlanSubmit(liveParams);
-    }
-  };
+  // On mount, load initial live trip calculations
+  useEffect(() => {
+    handlePlanSubmit(tripParams);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Re-fetch or re-evaluate live conditions without clearing the trip form
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      if (isDemoMode) {
-        const fixture = getMockPlanFixture();
-        setPlan(fixture);
-        setSelectedRouteId(fixture.recommended_route_id || fixture.routes[0]?.id);
-      } else {
-        // Ensure departure time is refreshed if it has drifted into the past
-        let currentDep = dayjs(tripParams.departure_time);
-        if (!currentDep.isValid() || currentDep.isBefore(dayjs().subtract(30, 'minute'))) {
-          currentDep = dayjs().add(1, 'hour');
-        }
-        const refreshedParams = {
-          ...tripParams,
-          departure_time: currentDep.toISOString(),
-        };
-        setTripParams(refreshedParams);
-        const response = await planTripMutation.mutateAsync(refreshedParams);
-        setPlan(response);
-        setSelectedRouteId(response.recommended_route_id || response.routes[0]?.id);
+      // Ensure departure time is refreshed if it has drifted into the past
+      let currentDep = dayjs(tripParams.departure_time);
+      if (!currentDep.isValid() || currentDep.isBefore(dayjs().subtract(30, 'minute'))) {
+        currentDep = dayjs().add(1, 'hour');
       }
+      const refreshedParams = {
+        ...tripParams,
+        departure_time: currentDep.toISOString(),
+      };
+      setTripParams(refreshedParams);
+      const response = await planTripMutation.mutateAsync(refreshedParams);
+      setPlan(response);
+      setSelectedRouteId(response.recommended_route_id || response.routes[0]?.id);
       setToast({
         open: true,
         message: 'Live weather forecasts and route alternatives successfully refreshed.',
@@ -174,20 +152,18 @@ export default function Planner() {
 
   // Reset trip to initial default benchmark scenario (Chicago -> Denver)
   const handleResetTrip = () => {
-    setIsDemoMode(true);
-    const fixture = getMockPlanFixture();
-    setPlan(fixture);
-    setSelectedRouteId(fixture.recommended_route_id || fixture.routes[0]?.id);
-    setSliderHour(0);
-    setFocusedCheckpoint(null);
-    setServerError(null);
-    setTripParams({
+    const defaultParams = {
       origin: { label: 'Chicago, IL, USA', lat: 41.8781, lon: -87.6298 },
       destination: { label: 'Denver, CO, USA', lat: 39.7392, lon: -104.9903 },
       departure_time: dayjs().add(2, 'hour').toISOString(),
       load_weight_lb: 42000,
       sampling_interval_miles: 25,
-    });
+    };
+    setTripParams(defaultParams);
+    setSliderHour(0);
+    setFocusedCheckpoint(null);
+    setServerError(null);
+    handlePlanSubmit(defaultParams);
     setToast({
       open: true,
       message: 'Trip reset to default benchmark scenario (Chicago, IL → Denver, CO).',
@@ -473,8 +449,6 @@ export default function Planner() {
             activeTab={activeTab}
             onTabChange={handleActiveTabChange}
             checkpointCount={activeRoute?.checkpoints?.length || 0}
-            isDemoMode={isDemoMode}
-            onToggleDemoMode={handleToggleDemoMode}
             onRefreshPlan={handleRefresh}
             isRefreshing={isRefreshing}
             onResetTrip={handleResetTrip}

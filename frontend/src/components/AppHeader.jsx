@@ -31,7 +31,6 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import MapIcon from '@mui/icons-material/Map';
 import TableRowsIcon from '@mui/icons-material/TableRows';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
-import BoltIcon from '@mui/icons-material/Bolt';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
@@ -43,8 +42,6 @@ export default function AppHeader({
   activeTab = 'map',
   onTabChange,
   checkpointCount = 0,
-  isDemoMode = false,
-  onToggleDemoMode,
   onRefreshPlan,
   isRefreshing = false,
   onResetTrip,
@@ -167,27 +164,20 @@ export default function AppHeader({
 
         {/* Right Actions & Health Status */}
         <Stack direction="row" spacing={1} alignItems="center">
-          {/* Demo Scenario vs Live API Switch */}
-          <Tooltip
-            title={
-              isDemoMode
-                ? 'Viewing Severe Storm Scenario (Chicago → Denver blizzard). Click to switch to Live API.'
-                : 'Click to load the benchmark Severe Storm Scenario (Chicago → Denver blizzard).'
-            }
-          >
+          {/* Live Real-Time API Status Badge */}
+          <Tooltip title="Live routing via OSRM/Mapbox and real-time satellite forecasts via Open-Meteo">
             <Chip
-              icon={isDemoMode ? <BoltIcon sx={{ fontSize: '15px !important' }} /> : <CloudDoneIcon sx={{ fontSize: '15px !important' }} />}
-              label={isDemoMode ? 'Storm Demo' : 'Live API'}
+              icon={<CloudDoneIcon sx={{ fontSize: '14px !important', color: 'primary.main' }} />}
+              label="Live API"
               size="small"
-              color={isDemoMode ? 'warning' : 'default'}
-              variant={isDemoMode ? 'filled' : 'outlined'}
-              onClick={onToggleDemoMode}
+              variant="outlined"
               sx={{
                 fontWeight: 700,
-                cursor: 'pointer',
                 height: 26,
                 fontSize: '0.6875rem',
-                borderColor: isDemoMode ? 'warning.main' : 'rgba(255,255,255,0.18)',
+                borderColor: 'rgba(56, 189, 248, 0.35)',
+                bgcolor: 'rgba(56, 189, 248, 0.08)',
+                color: 'text.primary',
               }}
             />
           </Tooltip>
@@ -398,42 +388,21 @@ export default function AppHeader({
 
         <Divider sx={{ mb: 2, borderColor: 'rgba(255,255,255,0.08)' }} />
 
-        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, mb: 1, display: 'block' }}>
-          Scenario Mode
-        </Typography>
-
-        <Box sx={{ mb: 2 }}>
-          <Chip
-            icon={isDemoMode ? <BoltIcon sx={{ fontSize: '15px !important' }} /> : <CloudDoneIcon sx={{ fontSize: '15px !important' }} />}
-            label={isDemoMode ? 'Severe Storm Scenario' : 'Live Real-Time API'}
-            color={isDemoMode ? 'warning' : 'default'}
-            variant={isDemoMode ? 'filled' : 'outlined'}
+        {onResetTrip && (
+          <Button
+            variant="outlined"
+            color="inherit"
+            startIcon={<RestartAltIcon />}
             onClick={() => {
-              if (onToggleDemoMode) onToggleDemoMode();
+              onResetTrip();
               setMobileDrawerOpen(false);
             }}
-            sx={{ fontWeight: 700, width: '100%', py: 1.5, height: 'auto', fontSize: '0.75rem', justifyContent: 'flex-start', px: 1.5 }}
-          />
-        </Box>
-
-        {onResetTrip && (
-          <>
-            <Divider sx={{ mb: 2, borderColor: 'rgba(255,255,255,0.08)' }} />
-            <Button
-              variant="outlined"
-              color="inherit"
-              startIcon={<RestartAltIcon />}
-              onClick={() => {
-                onResetTrip();
-                setMobileDrawerOpen(false);
-              }}
-              fullWidth
-              size="small"
-              sx={{ borderColor: 'rgba(255,255,255,0.15)', textTransform: 'none', fontSize: '0.8rem', color: 'text.secondary' }}
-            >
-              Reset Trip to Default
-            </Button>
-          </>
+            fullWidth
+            size="small"
+            sx={{ borderColor: 'rgba(255,255,255,0.15)', textTransform: 'none', fontSize: '0.8rem', color: 'text.secondary' }}
+          >
+            Reset Trip to Default
+          </Button>
         )}
       </Drawer>
     </AppBar>
@@ -444,8 +413,6 @@ AppHeader.propTypes = {
   activeTab: PropTypes.string,
   onTabChange: PropTypes.func,
   checkpointCount: PropTypes.number,
-  isDemoMode: PropTypes.bool,
-  onToggleDemoMode: PropTypes.func,
   onRefreshPlan: PropTypes.func,
   isRefreshing: PropTypes.bool,
   onResetTrip: PropTypes.func,
