@@ -8,7 +8,13 @@ import Map, {
   FullscreenControl,
   ScaleControl,
 } from 'react-map-gl/maplibre';
+import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+
+// Ensure MapLibre Web Worker is loaded from local root to avoid silent worker failure on production Vite builds
+if (typeof window !== 'undefined' && maplibregl.setWorkerUrl) {
+  maplibregl.setWorkerUrl('/maplibre-gl-worker.mjs');
+}
 import {
   Box,
   Typography,
@@ -172,12 +178,17 @@ export default function RouteMap({
 
   // Camera fit-to-bounds callback
   const fitCorridor = useCallback(() => {
-    if (mapRef.current && corridorBounds) {
-      mapRef.current.fitBounds(corridorBounds, {
-        padding: { top: 60, bottom: 60, left: 60, right: 60 },
-        duration: 900,
-        maxZoom: 12,
-      });
+    try {
+      if (mapRef.current && corridorBounds) {
+        const map = mapRef.current.getMap ? mapRef.current.getMap() : mapRef.current;
+        map?.fitBounds(corridorBounds, {
+          padding: { top: 60, bottom: 60, left: 60, right: 60 },
+          duration: 900,
+          maxZoom: 12,
+        });
+      }
+    } catch (err) {
+      console.warn('fitCorridor failed:', err);
     }
   }, [corridorBounds]);
 
@@ -401,6 +412,7 @@ export default function RouteMap({
     <Box sx={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
       <Map
         ref={mapRef}
+        mapLib={maplibregl}
         initialViewState={{
           longitude: -96.0,
           latitude: 40.5,
