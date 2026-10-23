@@ -18,8 +18,8 @@
 - [x] **Step 13 — Checkpoint table + risk strip**
 - [x] **Step 14 — UX & visual polish**
 - [x] **Step 15 — Docker, Redis (OPTIONAL), CI**
-- [ ] **Step 16 — Deploy**
-- [ ] **Step 17 — Documentation & Loom prep**
+- [x] **Step 16 — Deploy**
+- [x] **Step 17 — Documentation & Loom prep**
 - [ ] **Step 18 — Final QA (do not skip)**
 - [ ] **Step 19 — OPTIONAL (TripPlan model + GET /api/plans/{id}/)**
 
@@ -106,6 +106,17 @@
 - **What changed:** Containerized full application stack with production `backend/Dockerfile` (Python 3.12-slim, WhiteNoise collectstatic, Gunicorn WSGI workers, curl healthchecks) and multi-stage `frontend/Dockerfile` (Node 20 Vite build + Nginx alpine reverse proxy with SPA fallback and gzip compression); authored root `docker-compose.yml` linking backend, frontend, and healthchecked Redis service with shared bridge network and environment defaults; created `.dockerignore` files; added GitHub Actions CI pipeline (`.github/workflows/ci.yml`) running Ruff linter + Pytest with coverage on backend and ESLint + Vite production build on frontend.
 - **Files touched:** `backend/Dockerfile`, `backend/.dockerignore`, `backend/requirements.txt`, `frontend/Dockerfile`, `frontend/nginx.conf`, `frontend/.dockerignore`, `docker-compose.yml`, `.dockerignore`, `.github/workflows/ci.yml`, `PROGRESS.md`.
 - **How to verify:** Run `ruff check backend`, `pytest backend` (113 passed), `npm --prefix frontend run lint`, and `npm --prefix frontend run build`. Full stack can be launched via `docker compose up --build`.
+
+### Step 16 — Deploy
+- **What changed:** Deployed backend REST API on Render (`https://watr-spotter-asmt.onrender.com`) using Python 3 runtime, Gunicorn WSGI server, and CORS integration; deployed frontend on Vercel (`https://watr-spotter-asmt.vercel.app`) using Vite production preset with `vercel.json` SPA routing; solved production MapLibre Web Worker bundling by statically serving `maplibre-gl-worker.mjs` (518 KB) from `/` with `setWorkerUrl` and explicit `mapLib={maplibregl}` binding, enabling high-performance GPU GeoJSON route lines, checkpoint circles, and heatmap rendering on Vercel without silent worker failures.
+- **Files touched:** `frontend/public/maplibre-gl-worker.mjs`, `frontend/src/components/RouteMap.jsx`, `frontend/vercel.json`, `backend/config/settings.py`, `PROGRESS.md`.
+- **How to verify:** Query live backend health check `https://watr-spotter-asmt.onrender.com/api/health/` (200 OK); open live frontend `https://watr-spotter-asmt.vercel.app/` in browser; click "Try example trip" or search origin/destination and click "Calculate Safe Routes"; verify 3 candidate routes, colored route polylines, white checkpoint dots with risk halos, and 0-48h heatmap slider render smoothly on the map canvas.
+
+### Step 17 — Documentation & Loom prep
+- **What changed:** Authored comprehensive, industry-grade root `README.md` featuring live production deployment links, system architecture Mermaid workflow, quickstart 1-command Docker and 5-command native local setup, detailed 5-level risk engine and gross cargo rollover downgrade specifications, 5-tier lexicographical recommendation algorithm, interactive web UI walkthrough, API request/response documentation with worked payload examples, and testing commands; updated `docs/ARCHITECTURE.md` and `PROGRESS.md`.
+- **Files touched:** `README.md`, `docs/ARCHITECTURE.md`, `PROGRESS.md`.
+- **How to verify:** Inspect `README.md` in repository root; verify all Markdown links, Mermaid diagrams, code blocks, and math equations render correctly.
+
 
 
 
