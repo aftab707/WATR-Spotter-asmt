@@ -25,7 +25,6 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import MapIcon from '@mui/icons-material/Map';
@@ -44,7 +43,6 @@ export default function AppHeader({
   checkpointCount = 0,
   onRefreshPlan,
   isRefreshing = false,
-  onResetTrip,
   isSidebarCollapsed = false,
   onToggleSidebar,
   mobileTab = 'controls',
@@ -245,27 +243,6 @@ export default function AppHeader({
               {isRefreshing || isFetching ? 'Updating…' : 'Refresh'}
             </Box>
           </Button>
-
-          {/* Reset Trip Button (Desktop) */}
-          {onResetTrip && (
-            <Tooltip title="Reset trip form to default starting state">
-              <Button
-                size="small"
-                variant="text"
-                startIcon={<RestartAltIcon sx={{ fontSize: 15 }} />}
-                onClick={onResetTrip}
-                sx={{
-                  color: 'text.secondary',
-                  height: 28,
-                  fontSize: '0.75rem',
-                  display: { xs: 'none', lg: 'inline-flex' },
-                  '&:hover': { color: 'text.primary', bgcolor: 'rgba(255,255,255,0.05)' },
-                }}
-              >
-                Reset
-              </Button>
-            </Tooltip>
-          )}
         </Stack>
       </Toolbar>
 
@@ -385,25 +362,6 @@ export default function AppHeader({
             </ListItemButton>
           </ListItem>
         </List>
-
-        <Divider sx={{ mb: 2, borderColor: 'rgba(255,255,255,0.08)' }} />
-
-        {onResetTrip && (
-          <Button
-            variant="outlined"
-            color="inherit"
-            startIcon={<RestartAltIcon />}
-            onClick={() => {
-              onResetTrip();
-              setMobileDrawerOpen(false);
-            }}
-            fullWidth
-            size="small"
-            sx={{ borderColor: 'rgba(255,255,255,0.15)', textTransform: 'none', fontSize: '0.8rem', color: 'text.secondary' }}
-          >
-            Reset Trip to Default
-          </Button>
-        )}
       </Drawer>
     </AppBar>
   );
@@ -415,7 +373,6 @@ AppHeader.propTypes = {
   checkpointCount: PropTypes.number,
   onRefreshPlan: PropTypes.func,
   isRefreshing: PropTypes.bool,
-  onResetTrip: PropTypes.func,
   isSidebarCollapsed: PropTypes.bool,
   onToggleSidebar: PropTypes.func,
   mobileTab: PropTypes.string,

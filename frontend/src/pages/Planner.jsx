@@ -150,27 +150,6 @@ export default function Planner() {
     }
   };
 
-  // Reset trip to initial default benchmark scenario (Chicago -> Denver)
-  const handleResetTrip = () => {
-    const defaultParams = {
-      origin: { label: 'Chicago, IL, USA', lat: 41.8781, lon: -87.6298 },
-      destination: { label: 'Denver, CO, USA', lat: 39.7392, lon: -104.9903 },
-      departure_time: dayjs().add(2, 'hour').toISOString(),
-      load_weight_lb: 42000,
-      sampling_interval_miles: 25,
-    };
-    setTripParams(defaultParams);
-    setSliderHour(0);
-    setFocusedCheckpoint(null);
-    setServerError(null);
-    handlePlanSubmit(defaultParams);
-    setToast({
-      open: true,
-      message: 'Trip reset to default benchmark scenario (Chicago, IL → Denver, CO).',
-      severity: 'info',
-    });
-  };
-
   // Identify the fastest route candidate among all returned routes
   const fastestRouteId = [...plan.routes].sort(
     (a, b) => a.duration_minutes - b.duration_minutes
@@ -451,7 +430,6 @@ export default function Planner() {
             checkpointCount={activeRoute?.checkpoints?.length || 0}
             onRefreshPlan={handleRefresh}
             isRefreshing={isRefreshing}
-            onResetTrip={handleResetTrip}
             isSidebarCollapsed={isSidebarCollapsed}
             onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
             mobileTab={mobileTab}
