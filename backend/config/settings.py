@@ -106,7 +106,7 @@ cors_origins_raw = os.environ.get(
 CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in cors_origins_raw.split(",") if origin.strip()
 ]
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = os.environ.get("CORS_ALLOW_ALL_ORIGINS", "False").lower() in ("true", "1", "yes")
 
 # Django REST Framework
 REST_FRAMEWORK = {
