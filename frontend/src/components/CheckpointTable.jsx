@@ -164,14 +164,60 @@ export default function CheckpointTable({
       </Box>
 
       {/* 1. Mobile Card List View (< sm screens) */}
-      <Box sx={{ display: { xs: 'block', sm: 'none' }, p: 1.25 }}>
-        {visibleRows.length === 0 ? (
+      <Box
+        sx={{
+          display: { xs: 'block', sm: 'none' },
+          p: 1.25,
+          maxHeight: { xs: 'calc(100dvh - 280px)', sm: 'none' },
+          minHeight: 280,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(56, 189, 248, 0.45) rgba(255, 255, 255, 0.05)',
+          '&::-webkit-scrollbar': {
+            width: '6px',
+            display: 'block',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'rgba(255, 255, 255, 0.04)',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: 'rgba(56, 189, 248, 0.45)',
+            borderRadius: '4px',
+            border: '1px solid rgba(0, 0, 0, 0.2)',
+            '&:hover': {
+              background: 'rgba(56, 189, 248, 0.75)',
+            },
+          },
+        }}
+      >
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1, px: 0.5 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem', fontWeight: 600 }}>
+            Showing all {filteredCheckpoints.length} checkpoints
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'primary.main',
+              fontSize: '0.7rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              fontWeight: 600,
+            }}
+          >
+            ↕ Scroll to explore
+          </Typography>
+        </Stack>
+
+        {filteredCheckpoints.length === 0 ? (
           <Typography variant="body2" sx={{ py: 3, textAlign: 'center', color: 'text.secondary', fontSize: '0.8rem' }}>
             No checkpoints match the active filter.
           </Typography>
         ) : (
           <Stack spacing={1}>
-            {visibleRows.map((cp) => {
+            {filteredCheckpoints.map((cp) => {
               const isSelected = selectedCheckpointIndex === cp.index;
               const isHazard = cp.risk >= 3;
 
@@ -260,7 +306,28 @@ export default function CheckpointTable({
       </Box>
 
       {/* 2. Desktop Full 9-Column Table View (>= sm screens) */}
-      <TableContainer sx={{ display: { xs: 'none', sm: 'block' }, maxHeight: 420 }}>
+      <TableContainer
+        sx={{
+          display: { xs: 'none', sm: 'block' },
+          maxHeight: 440,
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(56, 189, 248, 0.45) rgba(255, 255, 255, 0.05)',
+          '&::-webkit-scrollbar': {
+            width: '6px',
+            height: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'rgba(255, 255, 255, 0.04)',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: 'rgba(56, 189, 248, 0.45)',
+            borderRadius: '4px',
+            '&:hover': {
+              background: 'rgba(56, 189, 248, 0.75)',
+            },
+          },
+        }}
+      >
         <Table stickyHeader size="small">
           <TableHead>
             <TableRow>
@@ -411,7 +478,7 @@ export default function CheckpointTable({
         </Table>
       </TableContainer>
 
-      {/* Pagination Controls */}
+      {/* Pagination Controls (Desktop Only) */}
       <TablePagination
         rowsPerPageOptions={[10, 25, 50, { label: 'All', value: -1 }]}
         component="div"
@@ -421,6 +488,7 @@ export default function CheckpointTable({
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
         sx={{
+          display: { xs: 'none', sm: 'flex' },
           borderTop: '1px solid rgba(255, 255, 255, 0.08)',
           bgcolor: 'background.default',
         }}

@@ -126,13 +126,13 @@ export default function Planner() {
       }
       setToast({
         open: true,
-        message: 'Live mausam aur routes kamyabi se refresh ho gaye!',
+        message: 'Live weather forecasts and route alternatives successfully refreshed.',
         severity: 'success',
       });
     } catch (err) {
       setToast({
         open: true,
-        message: err.message || 'Refresh fail ho gaya. Kripya dobara try karein.',
+        message: err.message || 'Failed to refresh live conditions. Please try again.',
         severity: 'error',
       });
     } finally {
@@ -151,7 +151,7 @@ export default function Planner() {
     setServerError(null);
     setToast({
       open: true,
-      message: 'Trip benchmark scenario (Chicago -> Denver) par reset ho gayi!',
+      message: 'Trip reset to default benchmark scenario (Chicago, IL → Denver, CO).',
       severity: 'info',
     });
   };
@@ -323,10 +323,10 @@ export default function Planner() {
             position: 'relative',
             zIndex: 2,
             bgcolor: 'background.default',
-            p: { xs: 1.5, md: 3 },
+            p: { xs: 1, sm: 2, md: 3 },
             display: 'flex',
             flexDirection: 'column',
-            gap: 2,
+            gap: { xs: 1, sm: 1.5, md: 2 },
             overflowY: 'auto',
           }}
         >
