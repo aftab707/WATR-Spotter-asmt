@@ -362,11 +362,11 @@ export default function Planner() {
             position: 'relative',
             zIndex: 2,
             bgcolor: 'background.default',
-            p: { xs: 1, sm: 2, md: 3 },
+            p: { xs: 1, sm: 2, md: 2.5 },
             display: 'flex',
             flexDirection: 'column',
-            gap: { xs: 1, sm: 1.5, md: 2 },
-            overflowY: 'auto',
+            gap: { xs: 1, sm: 1.5, md: 1.5 },
+            overflow: { xs: 'auto', sm: 'hidden' },
           }}
         >
           {activeRoute && (

@@ -43,7 +43,7 @@ export default function CheckpointTable({
   selectedCheckpointIndex = null,
 }) {
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(-1); // Default to 'All' so all corridor checkpoints are immediately scrollable
   const [riskFilter, setRiskFilter] = useState('ALL'); // 'ALL' | 'HAZARDS' | 'LOAD_RULE'
 
   // Sort checkpoints ascending by mile (spec requirement)
@@ -93,6 +93,10 @@ export default function CheckpointTable({
         overflow: 'hidden',
         bgcolor: 'background.paper',
         border: '1px solid rgba(255, 255, 255, 0.08)',
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        minHeight: 0,
       }}
     >
       {/* Table Toolbar & Filters */}
@@ -309,12 +313,15 @@ export default function CheckpointTable({
       <TableContainer
         sx={{
           display: { xs: 'none', sm: 'block' },
-          maxHeight: 440,
+          flex: 1,
+          maxHeight: { sm: 'calc(100vh - 280px)', md: 'calc(100vh - 270px)' },
+          overflowY: 'auto',
           scrollbarWidth: 'thin',
           scrollbarColor: 'rgba(56, 189, 248, 0.45) rgba(255, 255, 255, 0.05)',
           '&::-webkit-scrollbar': {
-            width: '6px',
-            height: '6px',
+            width: '8px',
+            height: '8px',
+            display: 'block',
           },
           '&::-webkit-scrollbar-track': {
             background: 'rgba(255, 255, 255, 0.04)',
@@ -322,6 +329,7 @@ export default function CheckpointTable({
           '&::-webkit-scrollbar-thumb': {
             background: 'rgba(56, 189, 248, 0.45)',
             borderRadius: '4px',
+            border: '1px solid rgba(0, 0, 0, 0.2)',
             '&:hover': {
               background: 'rgba(56, 189, 248, 0.75)',
             },
