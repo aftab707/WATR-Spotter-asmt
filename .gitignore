@@ -78,3 +78,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+
+# Internal Project Docs & Progress (Local Only)
+docs/
+PROGRESS.md
+PROJECT_SPEC.md
+*.png
+
