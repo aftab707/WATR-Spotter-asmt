@@ -31,7 +31,8 @@ export default function Planner() {
   const [hoveredRouteId, setHoveredRouteId] = useState(null);
   const [focusedCheckpoint, setFocusedCheckpoint] = useState(null);
   const [activeTab, setActiveTab] = useState('map'); // 'map' | 'checkpoints' | 'compare'
-  const [mobileTab, setMobileTab] = useState('controls'); // 'controls' | 'map'
+  const [mobileTab, setMobileTab] = useState('controls'); // 'controls' | 'map' | 'checkpoints' | 'compare'
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [sliderHour, setSliderHour] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(true);
@@ -39,6 +40,26 @@ export default function Planner() {
   const [isDemoMode, setIsDemoMode] = useState(true); // Default to realistic storm benchmark scenario
 
   const planTripMutation = usePlanTrip();
+
+  // Resize WebGL map when desktop sidebar expands or collapses
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 320);
+    return () => clearTimeout(timer);
+  }, [isSidebarCollapsed]);
+
+  const handleMobileTabChange = (newTab) => {
+    setMobileTab(newTab);
+    if (newTab !== 'controls') {
+      setActiveTab(newTab);
+    }
+  };
+
+  const handleActiveTabChange = (newTab) => {
+    setActiveTab(newTab);
+    setMobileTab(newTab);
+  };
 
   // Playback timer controller (350ms per timeline hour)
   useEffect(() => {
@@ -362,17 +383,24 @@ export default function Planner() {
       header={
         <AppHeader
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleActiveTabChange}
           checkpointCount={activeRoute?.checkpoints?.length || 0}
           isDemoMode={isDemoMode}
           onToggleDemoMode={handleToggleDemoMode}
           onRefreshPlan={() => (isDemoMode ? handleToggleDemoMode() : handlePlanSubmit(plan.meta))}
+          isSidebarCollapsed={isSidebarCollapsed}
+          onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
+          mobileTab={mobileTab}
+          onMobileTabChange={handleMobileTabChange}
         />
       }
       leftPanel={leftPanelContent}
       mainArea={mainWorkspaceContent}
       mobileTab={mobileTab}
-      onMobileTabChange={setMobileTab}
+      onMobileTabChange={handleMobileTabChange}
+      isSidebarCollapsed={isSidebarCollapsed}
+      onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
+      checkpointCount={activeRoute?.checkpoints?.length || 0}
     />
   );
 }

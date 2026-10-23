@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import {
   AppBar,
@@ -10,6 +11,14 @@ import {
   Tooltip,
   Tabs,
   Tab,
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Divider,
 } from '@mui/material';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -21,6 +30,11 @@ import MapIcon from '@mui/icons-material/Map';
 import TableRowsIcon from '@mui/icons-material/TableRows';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import BoltIcon from '@mui/icons-material/Bolt';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
+import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
+import TuneIcon from '@mui/icons-material/Tune';
+
 import { useHealthCheck } from '../api/queries';
 
 export default function AppHeader({
@@ -30,7 +44,12 @@ export default function AppHeader({
   isDemoMode = false,
   onToggleDemoMode,
   onRefreshPlan,
+  isSidebarCollapsed = false,
+  onToggleSidebar,
+  mobileTab = 'controls',
+  onMobileTabChange,
 }) {
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const { data: health, isLoading, isError, refetch, isFetching } = useHealthCheck();
 
   const isOnline = !isError && health?.status === 'ok';
@@ -38,8 +57,19 @@ export default function AppHeader({
   return (
     <AppBar position="sticky" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: '#0b0f19' }}>
       <Toolbar sx={{ justifyContent: 'space-between', minHeight: 60, px: { xs: 1.5, md: 2.5 } }}>
-        {/* Left Branding */}
-        <Stack direction="row" alignItems="center" spacing={1.5}>
+        {/* Left Branding & Mobile Drawer Trigger / Desktop Sidebar Collapse */}
+        <Stack direction="row" alignItems="center" spacing={1}>
+          {/* Mobile Hamburger Drawer Trigger */}
+          <IconButton
+            size="small"
+            color="inherit"
+            aria-label="Open mobile navigation menu"
+            onClick={() => setMobileDrawerOpen(true)}
+            sx={{ display: { xs: 'inline-flex', md: 'none' }, mr: 0.5 }}
+          >
+            <MenuIcon sx={{ fontSize: 22 }} />
+          </IconButton>
+
           <Box
             sx={{
               display: 'flex',
@@ -63,9 +93,33 @@ export default function AppHeader({
               Weather-Aware Truck Routing
             </Typography>
           </Box>
+
+          {/* Desktop Sidebar Collapse / Expand Icon Button */}
+          {onToggleSidebar && (
+            <Tooltip title={isSidebarCollapsed ? 'Show trip & routes sidebar' : 'Collapse sidebar (Full map view)'}>
+              <IconButton
+                size="small"
+                onClick={onToggleSidebar}
+                sx={{
+                  display: { xs: 'none', md: 'inline-flex' },
+                  ml: 1.25,
+                  color: isSidebarCollapsed ? 'text.secondary' : 'primary.main',
+                  bgcolor: isSidebarCollapsed ? 'rgba(255,255,255,0.04)' : 'rgba(56, 189, 248, 0.12)',
+                  border: '1px solid',
+                  borderColor: isSidebarCollapsed ? 'rgba(255,255,255,0.12)' : 'rgba(56, 189, 248, 0.35)',
+                  p: 0.7,
+                  transition: 'all 0.2s ease',
+                  '&:hover': { bgcolor: 'rgba(56, 189, 248, 0.22)', borderColor: 'primary.main' },
+                }}
+                aria-label={isSidebarCollapsed ? 'Show sidebar' : 'Collapse sidebar'}
+              >
+                <ViewSidebarIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+          )}
         </Stack>
 
-        {/* Center Primary View Navigation Tabs */}
+        {/* Center Primary View Navigation Tabs (Desktop >= md) */}
         <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
           <Tabs
             value={activeTab}
@@ -149,7 +203,7 @@ export default function AppHeader({
             <Tooltip title="Backend REST API is online and responding normally">
               <Chip
                 icon={<CheckCircleOutlineIcon sx={{ fontSize: 15 }} />}
-                label="Backend: Online"
+                label="Online"
                 color="success"
                 size="small"
                 variant="outlined"
@@ -184,13 +238,151 @@ export default function AppHeader({
               color: 'text.primary',
               height: 28,
               fontSize: '0.75rem',
-              px: 1.25,
+              px: { xs: 1, sm: 1.25 },
             }}
           >
-            Refresh
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Refresh</Box>
           </Button>
         </Stack>
       </Toolbar>
+
+      {/* Mobile Drawer Navigation (< md) */}
+      <Drawer
+        anchor="left"
+        open={mobileDrawerOpen}
+        onClose={() => setMobileDrawerOpen(false)}
+        PaperProps={{
+          sx: {
+            width: 280,
+            bgcolor: '#0e1320',
+            borderRight: '1px solid rgba(255,255,255,0.1)',
+            p: 2,
+          },
+        }}
+      >
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: 1,
+                bgcolor: 'rgba(56, 189, 248, 0.15)',
+                color: 'primary.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <LocalShippingIcon sx={{ fontSize: 18 }} />
+            </Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+              WATR
+            </Typography>
+          </Stack>
+          <IconButton size="small" onClick={() => setMobileDrawerOpen(false)} aria-label="Close menu">
+            <CloseIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Stack>
+
+        <Divider sx={{ mb: 2, borderColor: 'rgba(255,255,255,0.08)' }} />
+
+        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, mb: 1, display: 'block' }}>
+          Views & Navigation
+        </Typography>
+
+        <List disablePadding sx={{ mb: 2 }}>
+          <ListItem disablePadding sx={{ mb: 0.5 }}>
+            <ListItemButton
+              selected={mobileTab === 'controls'}
+              onClick={() => {
+                if (onMobileTabChange) onMobileTabChange('controls');
+                setMobileDrawerOpen(false);
+              }}
+              sx={{ borderRadius: 1.5, py: 1 }}
+            >
+              <ListItemIcon sx={{ minWidth: 36, color: mobileTab === 'controls' ? 'primary.main' : 'text.secondary' }}>
+                <TuneIcon sx={{ fontSize: 18 }} />
+              </ListItemIcon>
+              <ListItemText primary="Trip Setup & Form" primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: 600 }} />
+            </ListItemButton>
+          </ListItem>
+
+          <ListItem disablePadding sx={{ mb: 0.5 }}>
+            <ListItemButton
+              selected={activeTab === 'map' && mobileTab !== 'controls'}
+              onClick={() => {
+                if (onTabChange) onTabChange('map');
+                if (onMobileTabChange) onMobileTabChange('map');
+                setMobileDrawerOpen(false);
+              }}
+              sx={{ borderRadius: 1.5, py: 1 }}
+            >
+              <ListItemIcon sx={{ minWidth: 36, color: activeTab === 'map' ? 'primary.main' : 'text.secondary' }}>
+                <MapIcon sx={{ fontSize: 18 }} />
+              </ListItemIcon>
+              <ListItemText primary="Route Map & Forecast" primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: 600 }} />
+            </ListItemButton>
+          </ListItem>
+
+          <ListItem disablePadding sx={{ mb: 0.5 }}>
+            <ListItemButton
+              selected={activeTab === 'checkpoints'}
+              onClick={() => {
+                if (onTabChange) onTabChange('checkpoints');
+                if (onMobileTabChange) onMobileTabChange('checkpoints');
+                setMobileDrawerOpen(false);
+              }}
+              sx={{ borderRadius: 1.5, py: 1 }}
+            >
+              <ListItemIcon sx={{ minWidth: 36, color: activeTab === 'checkpoints' ? 'primary.main' : 'text.secondary' }}>
+                <TableRowsIcon sx={{ fontSize: 18 }} />
+              </ListItemIcon>
+              <ListItemText
+                primary={`Checkpoints (${checkpointCount || 0})`}
+                primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: 600 }}
+              />
+            </ListItemButton>
+          </ListItem>
+
+          <ListItem disablePadding>
+            <ListItemButton
+              selected={activeTab === 'compare'}
+              onClick={() => {
+                if (onTabChange) onTabChange('compare');
+                if (onMobileTabChange) onMobileTabChange('compare');
+                setMobileDrawerOpen(false);
+              }}
+              sx={{ borderRadius: 1.5, py: 1 }}
+            >
+              <ListItemIcon sx={{ minWidth: 36, color: activeTab === 'compare' ? 'primary.main' : 'text.secondary' }}>
+                <CompareArrowsIcon sx={{ fontSize: 18 }} />
+              </ListItemIcon>
+              <ListItemText primary="Compare Routes" primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: 600 }} />
+            </ListItemButton>
+          </ListItem>
+        </List>
+
+        <Divider sx={{ mb: 2, borderColor: 'rgba(255,255,255,0.08)' }} />
+
+        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, mb: 1, display: 'block' }}>
+          Scenario Mode
+        </Typography>
+
+        <Box sx={{ mb: 2 }}>
+          <Chip
+            icon={isDemoMode ? <BoltIcon sx={{ fontSize: '15px !important' }} /> : <CloudDoneIcon sx={{ fontSize: '15px !important' }} />}
+            label={isDemoMode ? 'Severe Storm Scenario' : 'Live Real-Time API'}
+            color={isDemoMode ? 'warning' : 'default'}
+            variant={isDemoMode ? 'filled' : 'outlined'}
+            onClick={() => {
+              if (onToggleDemoMode) onToggleDemoMode();
+              setMobileDrawerOpen(false);
+            }}
+            sx={{ fontWeight: 700, width: '100%', py: 1.5, height: 'auto', fontSize: '0.75rem', justifyContent: 'flex-start', px: 1.5 }}
+          />
+        </Box>
+      </Drawer>
     </AppBar>
   );
 }
@@ -202,4 +394,8 @@ AppHeader.propTypes = {
   isDemoMode: PropTypes.bool,
   onToggleDemoMode: PropTypes.func,
   onRefreshPlan: PropTypes.func,
+  isSidebarCollapsed: PropTypes.bool,
+  onToggleSidebar: PropTypes.func,
+  mobileTab: PropTypes.string,
+  onMobileTabChange: PropTypes.func,
 };
