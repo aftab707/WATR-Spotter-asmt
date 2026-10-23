@@ -193,7 +193,7 @@ export default function Planner() {
   // -------------------------------------------------------------------------
   const mainWorkspaceContent = (
     <Box sx={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
-      {/* 1. Map Canvas View: ALWAYS mounted so WebGL context & cached tiles stay alive */}
+      {/* 1. Map Canvas View: ALWAYS mounted with visibility so WebGL context & cached tiles stay alive */}
       <Box
         sx={{
           width: '100%',
@@ -201,7 +201,9 @@ export default function Planner() {
           position: 'absolute',
           top: 0,
           left: 0,
-          display: activeTab === 'map' ? 'block' : 'none',
+          visibility: activeTab === 'map' ? 'visible' : 'hidden',
+          pointerEvents: activeTab === 'map' ? 'auto' : 'none',
+          zIndex: 1,
         }}
       >
         <RouteMap

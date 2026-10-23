@@ -26,7 +26,6 @@ import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import AcUnitIcon from '@mui/icons-material/AcUnit';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import CloseIcon from '@mui/icons-material/Close';
 import dayjs from 'dayjs';
 
 import RiskBadge from './RiskBadge';
@@ -98,7 +97,7 @@ export default function RouteMap({
         map?.resize();
         map?.flyTo({
           center: [Number(focusedCheckpoint.lon), Number(focusedCheckpoint.lat)],
-          zoom: 7.5,
+          zoom: 6.2,
           duration: 800,
         });
       } catch (err) {
@@ -866,119 +865,6 @@ export default function RouteMap({
                 </Typography>
               </Stack>
             ))}
-          </Stack>
-        </Paper>
-      )}
-
-      {/* Floating Selected Checkpoint Info Card (Top Left - exactly like Map Legend) */}
-      {selectedCheckpoint && (
-        <Paper
-          sx={{
-            position: 'absolute',
-            top: { xs: 12, sm: 16 },
-            left: { xs: 12, sm: 16 },
-            p: 1.75,
-            bgcolor: 'rgba(17, 24, 39, 0.95)',
-            backdropFilter: 'blur(12px)',
-            border: '1.5px solid rgba(56, 189, 248, 0.4)',
-            borderRadius: 2,
-            zIndex: 11,
-            width: { xs: 260, sm: 300 },
-            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-          }}
-        >
-          {/* Header with Close Button */}
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.75 }}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                Mile {Number(selectedCheckpoint.mile || 0).toFixed(1)}
-              </Typography>
-              <RiskBadge level={Number(selectedCheckpoint.risk || 1)} size="small" />
-            </Stack>
-            <IconButton
-              size="small"
-              onClick={() => setSelectedCheckpoint(null)}
-              sx={{ color: 'text.secondary', p: 0.5, '&:hover': { color: 'text.primary' } }}
-              aria-label="Close checkpoint details"
-            >
-              <CloseIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          </Stack>
-
-          {/* Subtitle / ETA */}
-          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1, fontSize: '0.7rem' }}>
-            Truck ETA: <strong>{formatDateTime(selectedCheckpoint.eta)}</strong> • {selectedCheckpoint.route_label || activeRoute?.label}
-          </Typography>
-
-          {/* Weather Metrics Grid */}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 1,
-              p: 1,
-              bgcolor: 'background.default',
-              borderRadius: 1,
-              mb: 1,
-              textAlign: 'center',
-            }}
-          >
-            <Box>
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.625rem' }}>
-                Wind
-              </Typography>
-              <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.75rem', color: selectedCheckpoint.wind_mph >= 35 ? '#ef4444' : 'text.primary' }}>
-                {formatMph(selectedCheckpoint.wind_mph)}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.625rem' }}>
-                Rain
-              </Typography>
-              <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.75rem', color: selectedCheckpoint.rain_in_hr > 0 ? '#60a5fa' : 'text.disabled' }}>
-                {formatInHr(selectedCheckpoint.rain_in_hr)}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.625rem' }}>
-                Snow
-              </Typography>
-              <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.75rem', color: selectedCheckpoint.snow_in_hr > 0 ? '#93c5fd' : 'text.disabled' }}>
-                {formatInHr(selectedCheckpoint.snow_in_hr)}
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* Cargo Load Rule Warning if applied */}
-          {selectedCheckpoint.load_rule_applied && (
-            <Stack
-              direction="row"
-              spacing={0.75}
-              alignItems="center"
-              sx={{
-                p: 0.75,
-                borderRadius: 1,
-                bgcolor: 'rgba(239, 68, 68, 0.15)',
-                border: '1px solid rgba(239, 68, 68, 0.35)',
-                color: '#ef4444',
-                mb: 1,
-              }}
-            >
-              <WarningAmberIcon sx={{ fontSize: 16, flexShrink: 0 }} />
-              <Typography variant="caption" sx={{ fontSize: '0.6875rem', lineHeight: 1.25, fontWeight: 600 }}>
-                Heavy Load Rule: Risk elevated due to cargo weight ({Number(loadWeightLb || 42000).toLocaleString()} lb).
-              </Typography>
-            </Stack>
-          )}
-
-          {/* Drivers & Segment Length */}
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem' }}>
-              Drivers: {selectedCheckpoint.drivers || 'wind'}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem' }}>
-              Segment: {Number(selectedCheckpoint.segment_miles || 25).toFixed(1)} mi
-            </Typography>
           </Stack>
         </Paper>
       )}
