@@ -6,6 +6,7 @@ import {
   Stack,
   Alert,
   Button,
+  Snackbar,
 } from '@mui/material';
 import AltRouteIcon from '@mui/icons-material/AltRoute';
 import MapIcon from '@mui/icons-material/Map';
@@ -38,6 +39,8 @@ export default function Planner() {
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [serverError, setServerError] = useState(null);
   const [isDemoMode, setIsDemoMode] = useState(true); // Default to realistic storm benchmark scenario
+  const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const planTripMutation = usePlanTrip();
 
@@ -106,6 +109,51 @@ export default function Planner() {
       setIsDemoMode(false);
       handlePlanSubmit(plan.meta);
     }
+  };
+
+  // Re-fetch or re-evaluate live conditions without clearing the trip form
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      if (isDemoMode) {
+        const fixture = getMockPlanFixture();
+        setPlan(fixture);
+        setSelectedRouteId(fixture.recommended_route_id || fixture.routes[0]?.id);
+      } else {
+        const response = await planTripMutation.mutateAsync(plan.meta);
+        setPlan(response);
+        setSelectedRouteId(response.recommended_route_id || response.routes[0]?.id);
+      }
+      setToast({
+        open: true,
+        message: 'Live mausam aur routes kamyabi se refresh ho gaye!',
+        severity: 'success',
+      });
+    } catch (err) {
+      setToast({
+        open: true,
+        message: err.message || 'Refresh fail ho gaya. Kripya dobara try karein.',
+        severity: 'error',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Reset trip to initial default benchmark scenario (Chicago -> Denver)
+  const handleResetTrip = () => {
+    setIsDemoMode(true);
+    const fixture = getMockPlanFixture();
+    setPlan(fixture);
+    setSelectedRouteId(fixture.recommended_route_id || fixture.routes[0]?.id);
+    setSliderHour(0);
+    setFocusedCheckpoint(null);
+    setServerError(null);
+    setToast({
+      open: true,
+      message: 'Trip benchmark scenario (Chicago -> Denver) par reset ho gayi!',
+      severity: 'info',
+    });
   };
 
   // Identify the fastest route candidate among all returned routes
@@ -286,27 +334,27 @@ export default function Planner() {
             <Paper
               variant="outlined"
               sx={{
-                p: 2,
+                p: { xs: 1.25, sm: 2 },
                 bgcolor: 'background.paper',
                 borderRadius: 2,
                 border: '1px solid rgba(255, 255, 255, 0.1)',
               }}
             >
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: { xs: 1, sm: 1.5 } }}>
                 <Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
                     {activeRoute.label} Corridor Risk Exposure
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
                     Distance-proportional risk strip ({activeRoute.distance_miles.toFixed(1)} miles total) • Click segment to center on map
                   </Typography>
                 </Box>
                 <Button
                   size="small"
                   variant="outlined"
-                  startIcon={<MapIcon />}
+                  startIcon={<MapIcon sx={{ fontSize: { xs: 14, sm: 16 } }} />}
                   onClick={() => setActiveTab('map')}
-                  sx={{ fontSize: '0.75rem', py: 0.5 }}
+                  sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' }, py: 0.25, px: { xs: 1, sm: 1.5 } }}
                 >
                   View on Map
                 </Button>
@@ -314,8 +362,8 @@ export default function Planner() {
               <RiskStrip
                 checkpoints={activeRoute.checkpoints}
                 totalDistanceMiles={activeRoute.distance_miles}
-                height={16}
-                showLabels
+                height={12}
+                showLabels={false}
                 onSelectCheckpoint={(cp) => {
                   setFocusedCheckpoint(cp);
                   setActiveTab('map');
@@ -379,28 +427,49 @@ export default function Planner() {
   );
 
   return (
-    <ShellLayout
-      header={
-        <AppHeader
-          activeTab={activeTab}
-          onTabChange={handleActiveTabChange}
-          checkpointCount={activeRoute?.checkpoints?.length || 0}
-          isDemoMode={isDemoMode}
-          onToggleDemoMode={handleToggleDemoMode}
-          onRefreshPlan={() => (isDemoMode ? handleToggleDemoMode() : handlePlanSubmit(plan.meta))}
-          isSidebarCollapsed={isSidebarCollapsed}
-          onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
-          mobileTab={mobileTab}
-          onMobileTabChange={handleMobileTabChange}
-        />
-      }
-      leftPanel={leftPanelContent}
-      mainArea={mainWorkspaceContent}
-      mobileTab={mobileTab}
-      onMobileTabChange={handleMobileTabChange}
-      isSidebarCollapsed={isSidebarCollapsed}
-      onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
-      checkpointCount={activeRoute?.checkpoints?.length || 0}
-    />
+    <>
+      <ShellLayout
+        header={
+          <AppHeader
+            activeTab={activeTab}
+            onTabChange={handleActiveTabChange}
+            checkpointCount={activeRoute?.checkpoints?.length || 0}
+            isDemoMode={isDemoMode}
+            onToggleDemoMode={handleToggleDemoMode}
+            onRefreshPlan={handleRefresh}
+            isRefreshing={isRefreshing}
+            onResetTrip={handleResetTrip}
+            isSidebarCollapsed={isSidebarCollapsed}
+            onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
+            mobileTab={mobileTab}
+            onMobileTabChange={handleMobileTabChange}
+          />
+        }
+        leftPanel={leftPanelContent}
+        mainArea={mainWorkspaceContent}
+        mobileTab={mobileTab}
+        onMobileTabChange={handleMobileTabChange}
+        isSidebarCollapsed={isSidebarCollapsed}
+        onToggleSidebar={() => setIsSidebarCollapsed((prev) => !prev)}
+        checkpointCount={activeRoute?.checkpoints?.length || 0}
+      />
+
+      {/* User Feedback Toast Notification */}
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={4000}
+        onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+          severity={toast.severity}
+          variant="filled"
+          sx={{ width: '100%', fontSize: '0.85rem', fontWeight: 600 }}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
+    </>
   );
 }

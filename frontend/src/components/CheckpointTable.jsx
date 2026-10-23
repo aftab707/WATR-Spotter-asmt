@@ -31,12 +31,11 @@ import {
 /**
  * Checkpoint Weather Table.
  *
- * Per Step 13:
+ * Per Step 13 & Mobile Polish:
+ * - Desktop (>= sm): Full 9-column engineering data table with sticky headers.
+ * - Mobile (< sm): Thumb-friendly compact card list, zero horizontal scroll, instant focus targets.
  * - Guaranteed sorted by mile ascending.
  * - Surfaces: mile, ETA, wind, rain, snow, risk, drivers, load rule, and segment miles.
- * - Values match API data exactly.
- * - Clicking a row or focus button focuses that checkpoint on the map.
- * - Paginated to prevent UI lag and maintain zero layout shift.
  */
 export default function CheckpointTable({
   checkpoints = [],
@@ -99,11 +98,11 @@ export default function CheckpointTable({
       {/* Table Toolbar & Filters */}
       <Box
         sx={{
-          p: 1.75,
-          px: 2,
+          p: { xs: 1.25, sm: 1.75 },
+          px: { xs: 1.5, sm: 2 },
           display: 'flex',
           flexWrap: 'wrap',
-          gap: 1.5,
+          gap: 1,
           justifyContent: 'space-between',
           alignItems: 'center',
           borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
@@ -111,17 +110,17 @@ export default function CheckpointTable({
         }}
       >
         <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-            Route Checkpoints ({sortedCheckpoints.length})
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+            Checkpoints ({sortedCheckpoints.length})
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
             Weather conditions at truck ETA • Ordered by distance
           </Typography>
         </Box>
 
         {/* Filter Chips */}
-        <Stack direction="row" spacing={1} alignItems="center">
-          <FilterAltIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+        <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap">
+          <FilterAltIcon sx={{ fontSize: 15, color: 'text.secondary' }} />
           <Chip
             label={`All (${sortedCheckpoints.length})`}
             size="small"
@@ -131,12 +130,12 @@ export default function CheckpointTable({
               setRiskFilter('ALL');
               setPage(0);
             }}
-            sx={{ fontSize: '0.6875rem', height: 22 }}
+            sx={{ fontSize: '0.65rem', height: 22 }}
           />
 
           {hazardCount > 0 && (
             <Chip
-              label={`High / Severe (${hazardCount})`}
+              label={`High/Severe (${hazardCount})`}
               size="small"
               variant={riskFilter === 'HAZARDS' ? 'filled' : 'outlined'}
               color={riskFilter === 'HAZARDS' ? 'warning' : 'default'}
@@ -144,7 +143,7 @@ export default function CheckpointTable({
                 setRiskFilter('HAZARDS');
                 setPage(0);
               }}
-              sx={{ fontSize: '0.6875rem', height: 22 }}
+              sx={{ fontSize: '0.65rem', height: 22 }}
             />
           )}
 
@@ -158,14 +157,110 @@ export default function CheckpointTable({
                 setRiskFilter('LOAD_RULE');
                 setPage(0);
               }}
-              sx={{ fontSize: '0.6875rem', height: 22 }}
+              sx={{ fontSize: '0.65rem', height: 22 }}
             />
           )}
         </Stack>
       </Box>
 
-      {/* Checkpoints Data Table */}
-      <TableContainer sx={{ maxHeight: 380 }}>
+      {/* 1. Mobile Card List View (< sm screens) */}
+      <Box sx={{ display: { xs: 'block', sm: 'none' }, p: 1.25 }}>
+        {visibleRows.length === 0 ? (
+          <Typography variant="body2" sx={{ py: 3, textAlign: 'center', color: 'text.secondary', fontSize: '0.8rem' }}>
+            No checkpoints match the active filter.
+          </Typography>
+        ) : (
+          <Stack spacing={1}>
+            {visibleRows.map((cp) => {
+              const isSelected = selectedCheckpointIndex === cp.index;
+              const isHazard = cp.risk >= 3;
+
+              return (
+                <Paper
+                  key={cp.index}
+                  onClick={() => onSelectCheckpoint && onSelectCheckpoint(cp)}
+                  sx={{
+                    p: 1.25,
+                    borderRadius: 1.5,
+                    bgcolor: isSelected
+                      ? 'rgba(56, 189, 248, 0.12)'
+                      : isHazard
+                        ? 'rgba(239, 68, 68, 0.06)'
+                        : 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid',
+                    borderColor: isSelected
+                      ? 'primary.main'
+                      : isHazard
+                        ? 'rgba(239, 68, 68, 0.3)'
+                        : 'rgba(255, 255, 255, 0.08)',
+                    cursor: 'pointer',
+                    '&:active': { bgcolor: 'rgba(56, 189, 248, 0.2)' },
+                  }}
+                >
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                        Mile {cp.mile.toFixed(1)}
+                      </Typography>
+                      <RiskBadge level={cp.risk} size="small" />
+                      {cp.load_rule_applied && (
+                        <Chip
+                          icon={<WarningAmberIcon sx={{ fontSize: '11px !important' }} />}
+                          label="Heavy Load"
+                          size="small"
+                          color="error"
+                          variant="outlined"
+                          sx={{ height: 18, fontSize: '0.575rem', fontWeight: 700 }}
+                        />
+                      )}
+                    </Stack>
+
+                    <Tooltip title="Focus on map">
+                      <IconButton
+                        size="small"
+                        color={isSelected ? 'primary' : 'default'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onSelectCheckpoint) onSelectCheckpoint(cp);
+                        }}
+                        sx={{ p: 0.5, border: '1px solid rgba(255,255,255,0.1)' }}
+                      >
+                        <MyLocationIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    sx={{ mt: 0.75, color: 'text.secondary', fontSize: '0.72rem' }}
+                  >
+                    <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
+                      ETA: <strong>{formatDateTime(cp.eta)}</strong>
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontWeight: 600,
+                        color: cp.wind_mph >= 35 ? '#ef4444' : 'text.primary',
+                        fontSize: '0.72rem',
+                      }}
+                    >
+                      💨 {formatMph(cp.wind_mph)}
+                      {cp.rain_in_hr > 0 && ` • 🌧️ ${formatInHr(cp.rain_in_hr)}`}
+                      {cp.snow_in_hr > 0 && ` • ❄️ ${formatInHr(cp.snow_in_hr)}`}
+                    </Typography>
+                  </Stack>
+                </Paper>
+              );
+            })}
+          </Stack>
+        )}
+      </Box>
+
+      {/* 2. Desktop Full 9-Column Table View (>= sm screens) */}
+      <TableContainer sx={{ display: { xs: 'none', sm: 'block' }, maxHeight: 420 }}>
         <Table stickyHeader size="small">
           <TableHead>
             <TableRow>

@@ -19,11 +19,13 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import MapIcon from '@mui/icons-material/Map';
@@ -44,6 +46,8 @@ export default function AppHeader({
   isDemoMode = false,
   onToggleDemoMode,
   onRefreshPlan,
+  isRefreshing = false,
+  onResetTrip,
   isSidebarCollapsed = false,
   onToggleSidebar,
   mobileTab = 'controls',
@@ -226,12 +230,18 @@ export default function AppHeader({
           <Button
             size="small"
             variant="outlined"
-            startIcon={<RefreshIcon sx={{ fontSize: 15 }} />}
+            startIcon={
+              isRefreshing || isFetching ? (
+                <CircularProgress size={13} color="inherit" />
+              ) : (
+                <RefreshIcon sx={{ fontSize: 15 }} />
+              )
+            }
             onClick={() => {
               refetch();
               if (onRefreshPlan) onRefreshPlan();
             }}
-            disabled={isFetching}
+            disabled={isFetching || isRefreshing}
             aria-label="Refresh trip calculations and backend connectivity"
             sx={{
               borderColor: 'rgba(255,255,255,0.15)',
@@ -241,8 +251,31 @@ export default function AppHeader({
               px: { xs: 1, sm: 1.25 },
             }}
           >
-            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Refresh</Box>
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+              {isRefreshing || isFetching ? 'Updating…' : 'Refresh'}
+            </Box>
           </Button>
+
+          {/* Reset Trip Button (Desktop) */}
+          {onResetTrip && (
+            <Tooltip title="Reset trip form to default starting state">
+              <Button
+                size="small"
+                variant="text"
+                startIcon={<RestartAltIcon sx={{ fontSize: 15 }} />}
+                onClick={onResetTrip}
+                sx={{
+                  color: 'text.secondary',
+                  height: 28,
+                  fontSize: '0.75rem',
+                  display: { xs: 'none', lg: 'inline-flex' },
+                  '&:hover': { color: 'text.primary', bgcolor: 'rgba(255,255,255,0.05)' },
+                }}
+              >
+                Reset
+              </Button>
+            </Tooltip>
+          )}
         </Stack>
       </Toolbar>
 
@@ -382,6 +415,26 @@ export default function AppHeader({
             sx={{ fontWeight: 700, width: '100%', py: 1.5, height: 'auto', fontSize: '0.75rem', justifyContent: 'flex-start', px: 1.5 }}
           />
         </Box>
+
+        {onResetTrip && (
+          <>
+            <Divider sx={{ mb: 2, borderColor: 'rgba(255,255,255,0.08)' }} />
+            <Button
+              variant="outlined"
+              color="inherit"
+              startIcon={<RestartAltIcon />}
+              onClick={() => {
+                onResetTrip();
+                setMobileDrawerOpen(false);
+              }}
+              fullWidth
+              size="small"
+              sx={{ borderColor: 'rgba(255,255,255,0.15)', textTransform: 'none', fontSize: '0.8rem', color: 'text.secondary' }}
+            >
+              Reset Trip to Default
+            </Button>
+          </>
+        )}
       </Drawer>
     </AppBar>
   );
@@ -394,6 +447,8 @@ AppHeader.propTypes = {
   isDemoMode: PropTypes.bool,
   onToggleDemoMode: PropTypes.func,
   onRefreshPlan: PropTypes.func,
+  isRefreshing: PropTypes.bool,
+  onResetTrip: PropTypes.func,
   isSidebarCollapsed: PropTypes.bool,
   onToggleSidebar: PropTypes.func,
   mobileTab: PropTypes.string,
