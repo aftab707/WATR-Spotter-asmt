@@ -32,7 +32,43 @@ import RiskBadge from './RiskBadge';
 import { formatMph, formatInHr, formatDateTime } from '../lib/formatters';
 import { RISK_CONFIG } from '../lib/risk';
 
-const CARTO_DARK_MATTER_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+// World-Class Esri Dark Gray Canvas Basemap (100% Free, Zero API Key Required, Fast & High Contrast)
+const DARK_MAP_STYLE = {
+  version: 8,
+  sources: {
+    'esri-dark-base': {
+      type: 'raster',
+      tiles: [
+        'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      attribution: '&copy; Esri, DeLorme, NAVTEQ, TomTom, OpenStreetMap',
+    },
+    'esri-dark-ref': {
+      type: 'raster',
+      tiles: [
+        'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+    },
+  },
+  layers: [
+    {
+      id: 'esri-dark-base-layer',
+      type: 'raster',
+      source: 'esri-dark-base',
+      minzoom: 0,
+      maxzoom: 18,
+    },
+    {
+      id: 'esri-dark-ref-layer',
+      type: 'raster',
+      source: 'esri-dark-ref',
+      minzoom: 0,
+      maxzoom: 18,
+    },
+  ],
+};
 
 const ROUTE_LINE_COLORS = {
   r1: '#38bdf8', // Sky Blue (Route A)
@@ -180,40 +216,85 @@ export default function RouteMap({
     };
   }, [routes, selectedRouteId, hoveredRouteId]);
 
-  // GeoJSON FeatureCollection for checkpoints of the active route (Truck's ETA weather)
+  // GeoJSON FeatureCollection for checkpoints of ALL candidate routes
   const checkpointsGeoJson = useMemo(() => {
-    if (!activeRoute?.checkpoints) {
+    if (!routes || routes.length === 0) {
       return { type: 'FeatureCollection', features: [] };
+    }
+
+    const features = [];
+
+    // 1. Inactive routes checkpoints first (so active route dots render on top)
+    routes.forEach((r) => {
+      if (r.id !== activeRoute?.id && Array.isArray(r.checkpoints)) {
+        r.checkpoints.forEach((cp) => {
+          features.push({
+            type: 'Feature',
+            id: `${r.id}-cp-${cp.index}`,
+            geometry: {
+              type: 'Point',
+              coordinates: [Number(cp.lon), Number(cp.lat)],
+            },
+            properties: {
+              index: cp.index,
+              mile: Number(cp.mile),
+              lat: Number(cp.lat),
+              lon: Number(cp.lon),
+              eta: cp.eta,
+              risk: Number(cp.risk || 1),
+              risk_label: cp.risk_label || 'LOW',
+              wind_mph: Number(cp.wind_mph || 0),
+              rain_in_hr: Number(cp.rain_in_hr || 0),
+              snow_in_hr: Number(cp.snow_in_hr || 0),
+              drivers: Array.isArray(cp.drivers) ? cp.drivers.join(', ') : '',
+              load_rule_applied: Boolean(cp.load_rule_applied),
+              segment_miles: Number(cp.segment_miles || 25),
+              route_id: r.id,
+              route_label: r.label,
+              is_active_route: false,
+            },
+          });
+        });
+      }
+    });
+
+    // 2. Active route checkpoints (fully prominent)
+    if (activeRoute && Array.isArray(activeRoute.checkpoints)) {
+      activeRoute.checkpoints.forEach((cp) => {
+        features.push({
+          type: 'Feature',
+          id: `${activeRoute.id}-cp-${cp.index}`,
+          geometry: {
+            type: 'Point',
+            coordinates: [Number(cp.lon), Number(cp.lat)],
+          },
+          properties: {
+            index: cp.index,
+            mile: Number(cp.mile),
+            lat: Number(cp.lat),
+            lon: Number(cp.lon),
+            eta: cp.eta,
+            risk: Number(cp.risk || 1),
+            risk_label: cp.risk_label || 'LOW',
+            wind_mph: Number(cp.wind_mph || 0),
+            rain_in_hr: Number(cp.rain_in_hr || 0),
+            snow_in_hr: Number(cp.snow_in_hr || 0),
+            drivers: Array.isArray(cp.drivers) ? cp.drivers.join(', ') : '',
+            load_rule_applied: Boolean(cp.load_rule_applied),
+            segment_miles: Number(cp.segment_miles || 25),
+            route_id: activeRoute.id,
+            route_label: activeRoute.label,
+            is_active_route: true,
+          },
+        });
+      });
     }
 
     return {
       type: 'FeatureCollection',
-      features: activeRoute.checkpoints.map((cp) => ({
-        type: 'Feature',
-        id: `${activeRoute.id}-cp-${cp.index}`,
-        geometry: {
-          type: 'Point',
-          coordinates: [cp.lon, cp.lat],
-        },
-        properties: {
-          index: cp.index,
-          mile: cp.mile,
-          lat: cp.lat,
-          lon: cp.lon,
-          eta: cp.eta,
-          risk: cp.risk,
-          risk_label: cp.risk_label,
-          wind_mph: cp.wind_mph,
-          rain_in_hr: cp.rain_in_hr,
-          snow_in_hr: cp.snow_in_hr,
-          drivers: Array.isArray(cp.drivers) ? cp.drivers.join(', ') : '',
-          load_rule_applied: Boolean(cp.load_rule_applied),
-          segment_miles: cp.segment_miles,
-          route_label: activeRoute.label,
-        },
-      })),
+      features,
     };
-  }, [activeRoute]);
+  }, [routes, activeRoute]);
 
   // GeoJSON FeatureCollection for 0–48h Heatmap Points at sliderHour (Area Forecast)
   // Computed 100% client-side from the pre-loaded series — zero network requests
@@ -265,6 +346,10 @@ export default function RouteMap({
     );
     if (checkpointFeature) {
       const [lon, lat] = checkpointFeature.geometry.coordinates;
+      const clickedRouteId = checkpointFeature.properties.route_id;
+      if (clickedRouteId && onSelectRoute && clickedRouteId !== activeRoute?.id) {
+        onSelectRoute(clickedRouteId);
+      }
       setSelectedCheckpoint({
         ...checkpointFeature.properties,
         lon,
@@ -321,7 +406,7 @@ export default function RouteMap({
           latitude: 40.5,
           zoom: 4.5,
         }}
-        mapStyle={CARTO_DARK_MATTER_STYLE}
+        mapStyle={DARK_MAP_STYLE}
         onLoad={() => setMapLoaded(true)}
         onClick={handleMapClick}
         interactiveLayerIds={[
@@ -392,13 +477,16 @@ export default function RouteMap({
               }}
             />
 
-            {/* Corridor Point Markers at sliderHour (Area Forecast) */}
+            {/* Corridor Point Markers at sliderHour (Area Forecast) - Crisp White Dots with Risk Rings */}
             <Layer
               id="corridor-slider-points-layer"
               type="circle"
               paint={{
-                'circle-radius': 4.5,
-                'circle-color': [
+                'circle-radius': 5,
+                'circle-color': '#ffffff',
+                'circle-opacity': 0.95,
+                'circle-stroke-width': 2.5,
+                'circle-stroke-color': [
                   'match',
                   ['get', 'risk'],
                   1,
@@ -413,10 +501,7 @@ export default function RouteMap({
                   RISK_CONFIG[5].color,
                   '#38bdf8',
                 ],
-                'circle-opacity': 0.8,
-                'circle-stroke-width': 1,
-                'circle-stroke-color': '#ffffff',
-                'circle-stroke-opacity': 0.5,
+                'circle-stroke-opacity': 0.95,
               }}
             />
 
@@ -432,8 +517,21 @@ export default function RouteMap({
           </Source>
         )}
 
-        {/* Route Polylines Source & Layer */}
+        {/* Route Polylines Source & Layers (Dark casing + glowing core) */}
         <Source id="routes-source" type="geojson" data={routesGeoJson}>
+          <Layer
+            id="route-lines-casing-layer"
+            type="line"
+            paint={{
+              'line-color': '#000000',
+              'line-width': ['+', ['get', 'lineWidth'], 3.5],
+              'line-opacity': 0.85,
+            }}
+            layout={{
+              'line-cap': 'round',
+              'line-join': 'round',
+            }}
+          />
           <Layer
             id="route-lines-layer"
             type="line"
@@ -449,26 +547,29 @@ export default function RouteMap({
           />
         </Source>
 
-        {/* Checkpoint Markers Source & Layers (Truck's ETA weather) */}
+        {/* Checkpoint Markers Source & Layers (Truck ETA) - Hyper-Visible White Dots with Risk Rings */}
         <Source id="checkpoints-source" type="geojson" data={checkpointsGeoJson}>
           {/* Subtle Outer Halo for visibility */}
           <Layer
             id="checkpoint-halo-layer"
             type="circle"
             paint={{
-              'circle-radius': 8,
+              'circle-radius': ['case', ['get', 'is_active_route'], 9.5, 6],
               'circle-color': '#000000',
-              'circle-opacity': 0.5,
+              'circle-opacity': 0.8,
             }}
           />
 
-          {/* Core Risk-Colored Checkpoint Circle */}
+          {/* Core White Checkpoint Circle with Risk-Colored Ring */}
           <Layer
             id="checkpoint-markers-layer"
             type="circle"
             paint={{
-              'circle-radius': 5.5,
-              'circle-color': [
+              'circle-radius': ['case', ['get', 'is_active_route'], 6.5, 4],
+              'circle-color': '#ffffff', // PURE WHITE DOT!
+              'circle-opacity': ['case', ['get', 'is_active_route'], 1.0, 0.8],
+              'circle-stroke-width': ['case', ['get', 'is_active_route'], 3, 1.5],
+              'circle-stroke-color': [
                 'match',
                 ['get', 'risk'],
                 1,
@@ -483,9 +584,7 @@ export default function RouteMap({
                 RISK_CONFIG[5].color,
                 '#38bdf8', // fallback
               ],
-              'circle-stroke-width': 1.5,
-              'circle-stroke-color': '#ffffff',
-              'circle-stroke-opacity': 0.9,
+              'circle-stroke-opacity': 1.0,
             }}
           />
 
@@ -494,7 +593,7 @@ export default function RouteMap({
             id="checkpoint-hitbox-layer"
             type="circle"
             paint={{
-              'circle-radius': 16,
+              'circle-radius': 18,
               'circle-opacity': 0,
             }}
           />
@@ -834,9 +933,9 @@ export default function RouteMap({
                 </Typography>
               </Stack>
               <Stack direction="row" spacing={0.65} alignItems="center">
-                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#22c55e', flexShrink: 0 }} />
+                <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#ffffff', border: '1.5px solid #22c55e', flexShrink: 0 }} />
                 <Typography variant="caption" sx={{ fontSize: '0.625rem', color: 'text.secondary', lineHeight: 1.2 }}>
-                  <strong>Checkpoints:</strong> Weather at truck ETA
+                  <strong>Checkpoints:</strong> White dots with risk ring (Truck ETA)
                 </Typography>
               </Stack>
             </Stack>
